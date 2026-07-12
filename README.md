@@ -1,4 +1,4 @@
-# ROCm-ccvt-monitoring
+# ROCm-ccvt-anlysis
 
 CCTV monitoring with live AI object detection, in one system, run as one
 Docker Compose stack behind a single port. The whole AI stack runs on a
