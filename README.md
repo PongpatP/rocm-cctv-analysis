@@ -352,3 +352,12 @@ assumed stacking with measured stairwell geometry for the full twin.
 - First `docker compose up` builds the service images and pulls
   caddy/go2rtc. The detector compiles its RT-DETR MIGraphX cache on first
   boot (~9 min) and loads it in a few seconds on every boot after.
+
+## License
+
+**PolyForm Noncommercial License 1.0.0** — see [LICENSE.md](LICENSE.md).
+
+You may use, modify, share and build on this project for any **non‑commercial**
+purpose (study, research, personal projects, non‑profit / educational / public‑
+safety organizations). **Commercial use is not granted** by this license. For a
+commercial license, contact the copyright holder.
