@@ -31,6 +31,10 @@ let aspect = "16:9";
 let dets = [];           // detections for the current segment
 let aiOn = true;
 let pbThr = 0.30;
+// Delay applied to every detection so it lines up with the buffered video.
+// Set on the Settings page ("Playback box sync"), shared by every playback view
+// via localStorage. A moving object's box lagging behind it -> raise; ahead -> lower.
+let DET_LATENCY_MS = Number(localStorage.getItem("pb_sync_ms") ?? 2800);
 
 const OVERLAY_COLORS = {
   person: "#ff6a00", car: "#2ec5ff", truck: "#b085ff",
@@ -57,6 +61,7 @@ const thrVal = document.getElementById("pb-thr-val");
 function setThr(v) { pbThr = Number(v); thrEl.value = pbThr; thrVal.textContent = pbThr.toFixed(2); }
 setThr(0.30);
 thrEl.addEventListener("input", () => setThr(thrEl.value));
+
 fetch("/api/settings").then((r) => r.json())
   .then((s) => setThr(Math.max(0.10, s.min_confidence || 0.30))).catch(() => {});
 
@@ -282,7 +287,6 @@ function onTimelineHover(e) {
 }
 
 /* ---- player ---- */
-const DET_LATENCY_MS = 400;
 async function loadDetections(seg) {
   dets = [];
   segStartMs = segEpochMs(dateSel.value, seg.time);

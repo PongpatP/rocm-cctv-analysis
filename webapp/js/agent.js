@@ -271,6 +271,17 @@ function drawFollows() {
   requestAnimationFrame(drawFollows);
 }
 
+// Where a piece of evidence came from: the vision-language model reading the
+// footage (VLM activity log) or a database count/lookup (SQL). Shown as a badge
+// so the operator always knows whether a fact was SEEN or COUNTED.
+function srcBadge(e) {
+  const s = e && e.source;
+  if (s !== "VLM" && s !== "SQL") return "";
+  return s === "VLM"
+    ? `<span class="src-badge src-vlm" title="Read from the footage by the vision-language model">👁 VLM log</span>`
+    : `<span class="src-badge src-sql" title="Counted from the detection database">🗄 SQL</span>`;
+}
+
 function eventCard(e) {
   const d = document.createElement("div");
   d.className = "ev-event" + (e.suspicious ? " ev-event--flag" : "");
@@ -279,7 +290,7 @@ function eventCard(e) {
       <img src="${API}/behavior/snapshot?p=${encodeURIComponent(e.snapshot)}" alt="">
       <button class="ev-event__play" title="Play the video of this moment here">▶ video</button>
     </div>
-    <div class="ev-event__meta">${esc(e.camera)} · ${when(e.ts_ms)}${e.gid ? ` · G${e.gid}` : ""}</div>
+    <div class="ev-event__meta">${esc(e.camera)} · ${when(e.ts_ms)}${e.gid ? ` · G${e.gid}` : ""}${srcBadge(e)}</div>
     <div class="ev-event__act">${esc(e.activity || "")}</div>
     ${e.gid ? '<button class="ev-event__more">＋ more about this person</button>' : ""}`;
   d.querySelector(".ev-event__play").onclick = () => openClip(e.camera, +e.ts_ms);
@@ -299,13 +310,15 @@ function videoCard(e) {
       <video controls preload="metadata" src="${e.url}"></video>
       <canvas class="ev-rec__anno"></canvas>
     </div>
-    <div class="ev-event__meta">${e.place ? esc(e.place) + " · " : ""}${esc(e.camera)} · ${esc(e.when || "")}</div>`;
+    <div class="ev-event__meta">${e.place ? esc(e.place) + " · " : ""}${esc(e.camera)} · ${esc(e.when || "")}${srcBadge(e)}</div>`;
   const video = d.querySelector("video"), canvas = d.querySelector(".ev-rec__anno");
   if (e.seekMs && e.startMs) video.addEventListener("loadedmetadata", () => {
     try { video.currentTime = Math.max(0, (e.seekMs - e.startMs) / 1000); } catch {}
   }, { once: true });
 
   let boxes = [];
+  // Playback box sync (set on the Settings page) — align boxes to the buffered video, same as the archive page
+  const pbSyncMs = Number(localStorage.getItem("pb_sync_ms") ?? 2800);
   if (e.startMs) fetch(`/api/detections?camera=${e.camera}&start_ms=${e.startMs}&end_ms=${e.startMs + 65000}`)
     .then((r) => r.json()).then((rows) => { boxes = Array.isArray(rows) ? rows : []; }).catch(() => {});
 
@@ -314,7 +327,7 @@ function videoCard(e) {
     canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (state.showBoxes && boxes.length && e.startMs) {
-      const wall = e.startMs + video.currentTime * 1000;
+      const wall = e.startMs + video.currentTime * 1000 + pbSyncMs;
       let best = Infinity, bts = null;
       for (const b of boxes) { const dt = Math.abs(b.ts - wall); if (dt < best) { best = dt; bts = b.ts; } }
       if (bts !== null && best < 700) {
@@ -550,6 +563,95 @@ function addBubble(role, content, verification, ts) {
   return b;
 }
 
+// A freshly generated answer types itself out, like a movement recorder. Only
+// for live replies — history and user messages use the instant addBubble above.
+function addBubbleTyping(content, verification, ts) {
+  el("welcome")?.remove();
+  const d = document.createElement("div");
+  d.className = "msg msg--assistant";
+  const body = document.createElement("div");
+  body.className = "msg__body";
+  d.appendChild(body);
+  const t = fmtTime(ts ?? Date.now());
+  if (t) {
+    const time = document.createElement("span");
+    time.className = "msg__time"; time.textContent = t; d.appendChild(time);
+  }
+  el("thread").appendChild(d);
+  const full = String(content || ""), badge = verifyBadge(verification);
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const finish = () => { body.innerHTML = esc(full).replace(/\n/g, "<br>") + badge;
+                         el("thread").scrollTop = el("thread").scrollHeight; };
+  if (reduce || full.length > 4000) { finish(); return d; }
+  let i = 0;
+  const step = Math.max(1, Math.round(full.length / 400));   // ~4s ceiling for long answers
+  const timer = setInterval(() => {
+    i += step;
+    if (i >= full.length) { clearInterval(timer); finish(); return; }
+    body.innerHTML = esc(full.slice(0, i)).replace(/\n/g, "<br>");
+    el("thread").scrollTop = el("thread").scrollHeight;
+  }, 12);
+  return d;
+}
+
+/* ---- conversation memory ring (Claude-style rolling summary) -------------- */
+const CTX_CIRC = 94.25;                       // 2·π·r for r=15
+function updateContext(ctx) {
+  const ring = el("ctx-ring"), fill = el("ctx-fill");
+  if (!ring || !fill) return;
+  const pct = ctx && typeof ctx.pct === "number" ? Math.max(0, Math.min(1, ctx.pct)) : 0;
+  ring.hidden = pct < 0.02;
+  fill.style.strokeDashoffset = String(CTX_CIRC * (1 - pct));
+  ring.classList.toggle("is-full", pct >= 1);
+  ring.title = `Conversation memory ${Math.round(pct * 100)}% full — click to summarise the earlier messages`;
+}
+
+// A clarifying question's options, shown as clickable chips (like quick replies
+// in a normal chat). Clicking one sends it as the next message. A 'None of these'
+// chip is always added so the user is never boxed in.
+function renderChoices(choices) {
+  if (!Array.isArray(choices) || !choices.length) return;
+  const wrap = document.createElement("div");
+  wrap.className = "msg-choices";
+  for (const c of [...choices, "None of these"]) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "msg-choice";
+    b.textContent = c;
+    b.onclick = () => { wrap.remove(); send(c); };
+    wrap.appendChild(b);
+  }
+  el("thread").appendChild(wrap);
+  el("thread").scrollTop = el("thread").scrollHeight;
+}
+
+function estimateContext() {                  // rough client estimate when opening a saved thread
+  let chars = 0;
+  el("thread").querySelectorAll(".msg__body").forEach((b) => { chars += (b.textContent || "").length; });
+  updateContext({ pct: Math.min(1, (chars / 3) / 5200) });
+}
+
+let summarizing = false;
+async function summarizeNow(auto) {
+  if (summarizing || !state.conv) return;
+  summarizing = true;
+  const ring = el("ctx-ring");
+  ring && ring.classList.add("is-busy");
+  const notice = addBubble("assistant", auto
+    ? "Summarising earlier messages to free up memory…"
+    : "Summarising the conversation so far…");
+  notice.classList.add("msg--thinking");
+  try {
+    const d = await post(`/agent/conversations/${state.conv}/summarize`, {});
+    notice.remove();
+    if (d && d.ok) {
+      if (d.summarized > 0) await openConversation(state.conv);   // reload the compacted thread
+      updateContext(d.context);
+    }
+  } catch { notice.remove(); }
+  finally { summarizing = false; ring && ring.classList.remove("is-busy"); }
+}
+
 /* ---- sessions ------------------------------------------------------------ */
 async function loadSessions() {
   const d = await j("/agent/conversations");
@@ -583,6 +685,7 @@ function showWelcome() {
       <h2>What would you like to look into?</h2>
       <p>Describe an incident and I’ll search what the building recorded.</p></div>`;
   showDefaultEvidence();
+  updateContext({ pct: 0 });
 }
 
 async function openConversation(id) {
@@ -596,6 +699,7 @@ async function openConversation(id) {
     if (m.evidence && m.evidence.length) lastEvidence = m.evidence;
   }
   if (lastEvidence.length) renderEvidence(lastEvidence); else showDefaultEvidence();
+  estimateContext();
   loadSessions();
 }
 
@@ -607,6 +711,7 @@ async function newConversation() {
   el("input").focus();
 }
 el("new-chat").onclick = newConversation;
+if (el("ctx-ring")) el("ctx-ring").onclick = () => summarizeNow(false);
 
 /* ---- sending ------------------------------------------------------------- */
 async function send(text) {
@@ -626,12 +731,16 @@ async function send(text) {
     const d = await post("/agent/chat", {
       conversation_id: state.conv, message: text,
       hours: +el("hours").value,
-      provider: el("model")?.value || undefined });
+      provider: el("model")?.value || undefined,
+      max_tokens: Number(localStorage.getItem("agent_max_tokens")) || undefined });
     thinking.remove();
     if (!d.ok) { addBubble("assistant", "Sorry — " + (d.error || "the search failed.")); }
     else {
-      addBubble("assistant", d.reply, d.verification);
+      addBubbleTyping(d.reply, d.verification);
       renderEvidence(d.evidence);
+      renderChoices(d.choices);                                     // clickable clarifying options
+      updateContext(d.context);
+      if (d.context && d.context.pct >= 0.85) summarizeNow(true);   // near full → auto-compact
     }
     loadSessions();
   } catch (e) {

@@ -102,10 +102,10 @@ def _load():
     ocr = PlateOCR(os.path.join(MODEL_DIR, "ocr"),
                    os.path.join(MODEL_DIR, "ocr", "thai_plate_dict.txt"))
 
-    # MIT-licensed YOLOv9-t plate detector on MIGraphX GPU (~2ms/frame).
+    # Apache-2.0 RF-DETR plate detector on MIGraphX GPU (~5ms/frame).
     det = None
     dev = "cpu"
-    onnx_path = os.path.join(MODEL_DIR, "yolov9-t-640-plate-end2end.onnx")
+    onnx_path = os.path.join(MODEL_DIR, "rfdetr-large-plate.onnx")
     if os.path.exists(onnx_path):
         from plate_detector import MigraphxYOLO
         det = MigraphxYOLO(onnx_path, conf=CFG["det_conf"])
@@ -125,7 +125,7 @@ def _load():
 
     _state["device"] = dev
     _state["ready"] = True
-    print(f"[plate] YOLOv9-t (MIT) on {dev}, Thai OCR on CPU, cameras={CFG['cameras']}",
+    print(f"[plate] RF-DETR (Apache-2.0) on {dev}, Thai OCR on CPU, cameras={CFG['cameras']}",
           flush=True)
     return det, recognizer_fn
 

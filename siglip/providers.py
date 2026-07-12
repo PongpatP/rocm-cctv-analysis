@@ -285,6 +285,22 @@ def llm_chat(messages, provider=None, max_tokens=None):
         if provider in OPENAI_PROVIDERS:
             # OpenAI shape takes the system message inline as the first turn.
             url_key, model_key = OPENAI_PROVIDERS[provider]
+            # Fit prompt + completion inside the model's context window so vLLM
+            # never 400s on a long thread: keep the NEWEST turns that fit and cap
+            # max_tokens to whatever room is left. (est ~1 token / 3 chars, high.)
+            model_len = int(cfg.get("local_max_model_len", 8192))
+            est = lambda s: len(s or "") // 3 + 1
+            sys_t = est(system)
+            want_out = min(mt, 1536)
+            kept, used = [], 0
+            for m in reversed(turns):
+                t = est(m["content"])
+                if kept and sys_t + used + t + want_out > model_len - 128:
+                    break
+                kept.append(m)
+                used += t
+            turns = list(reversed(kept))
+            mt = max(256, min(mt, model_len - sys_t - used - 128))
             msgs = ([{"role": "system", "content": system}] if system else []) + \
                    [{"role": m["role"], "content": m["content"]} for m in turns]
             r = requests.post(

@@ -85,6 +85,43 @@ body:has(.inv) .topbar { flex: none; }
 }
 #send:disabled { opacity: 0.5; cursor: default; }
 
+/* conversation-memory ring — fills as the thread grows, click to summarise */
+.inv-ctx {
+  flex: none; width: 34px; height: 34px; padding: 0; border: 0; background: none;
+  cursor: pointer; display: grid; place-items: center;
+}
+.inv-ctx svg { display: block; }
+.inv-ctx__track { fill: none; stroke: rgba(0,0,0,.12); stroke-width: 3.5; }
+.inv-ctx__fill {
+  fill: none; stroke: #111; stroke-width: 3.5; stroke-linecap: round;
+  stroke-dasharray: 94.25; stroke-dashoffset: 94.25;
+  transition: stroke-dashoffset .5s ease, stroke .3s ease;
+}
+.inv-ctx.is-full .inv-ctx__fill { stroke: #1e3a8a; }   /* dark blue when full */
+.inv-ctx.is-busy { animation: inv-ctx-spin 0.9s linear infinite; }
+.inv-ctx.is-busy .inv-ctx__fill { stroke: #1e3a8a; stroke-dashoffset: 66; }
+@keyframes inv-ctx-spin { to { transform: rotate(360deg); } }
+.inv-ctx__note {
+  align-self: center; font-size: 12px; color: var(--muted, #667); white-space: nowrap;
+}
+
+/* clarifying-question quick-reply chips (clickable, like a normal chat) */
+.msg-choices { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 12px 6px; }
+.msg-choice {
+  border: 1px solid var(--accent, #2563eb); background: transparent;
+  color: var(--accent, #2563eb); padding: 8px 15px; border-radius: 999px;
+  font-size: 14px; cursor: pointer; transition: background .15s, color .15s;
+}
+.msg-choice:hover { background: var(--accent, #2563eb); color: #fff; }
+
+/* provenance badge — where a piece of evidence came from (VLM log vs SQL) */
+.src-badge {
+  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .02em; vertical-align: middle;
+}
+.src-vlm { background: #ede9fe; color: #6d28d9; }   /* read by the vision-language model */
+.src-sql { background: #dcfce7; color: #15803d; }   /* counted from the database */
+
 /* ---- evidence panel ---- */
 .inv-evidence {
   display: flex; flex-direction: column; min-height: 0;

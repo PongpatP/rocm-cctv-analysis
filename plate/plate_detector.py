@@ -1,17 +1,26 @@
-"""MIGraphX plate detector — MIT-licensed YOLOv9-t end2end model.
+"""MIGraphX plate detector — RF-DETR-Large (Apache-2.0).
 
-Uses the open-image-models YOLOv9-t-640-license-plate-end2end ONNX (MIT license).
-The model has NMS baked in, so the output is already filtered:
-    [N, 7]: batch_idx, x1, y1, x2, y2, class_id, confidence
+Uses the Rickkosse/rfdetr_licences_plate_detector ONNX model, finetuned from
+roboflow/rf-detr-large (Apache-2.0) for license plate detection.
 
-Runs on MIGraphX (AMD GPU) when available (~2ms/frame), falls back to CPU (~100ms).
+Output format (DETR-style, NMS-free):
+  dets:   [1, 300, 4]  — cx, cy, w, h (normalized 0-1)
+  labels: [1, 300, 2]  — class logits (background, plate) → sigmoid for prob
+
+Runs on MIGraphX GPU (~5.4ms/frame on MI300X), falls back to CPU.
+Input: 768×768 RGB, ImageNet-normalized.
 """
 import os
 import numpy as np
 
+_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 3, 1, 1)
+_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 3, 1, 1)
+
 
 class MigraphxYOLO:
-    SIZE = 640
+    """Drop-in replacement interface: .predict(crop) -> [(x1,y1,x2,y2,conf)]"""
+
+    SIZE = 768
 
     def __init__(self, onnx_path, conf=0.30):
         import onnxruntime as ort
@@ -22,54 +31,44 @@ class MigraphxYOLO:
             "MIGraphXExecutionProvider", "CPUExecutionProvider"])
         self.inp = self.sess.get_inputs()[0].name
         self.on_gpu = self.sess.get_providers()[0] == "MIGraphXExecutionProvider"
-        if self.on_gpu:                      # compile the fixed shape now
+        if self.on_gpu:
+            # Compile the fixed shape now (cached via ORT_MIGRAPHX_MODEL_CACHE_PATH)
             self.sess.run(None, {self.inp: np.zeros((1, 3, self.SIZE, self.SIZE),
                                                     np.float32)})
-
-    def _letterbox(self, img):
-        """Resize keeping aspect ratio, pad to SIZE×SIZE.
-        Returns (blob, ratio_w, ratio_h, pad_w, pad_h)."""
-        import cv2
-        h, w = img.shape[:2]
-        r = min(self.SIZE / h, self.SIZE / w)
-        nh, nw = int(round(h * r)), int(round(w * r))
-        resized = cv2.resize(img, (nw, nh), interpolation=cv2.INTER_LINEAR)
-        canvas = np.full((self.SIZE, self.SIZE, 3), 114, np.uint8)
-        pad_w, pad_h = (self.SIZE - nw) // 2, (self.SIZE - nh) // 2
-        canvas[pad_h:pad_h + nh, pad_w:pad_w + nw] = resized
-        # BGR->RGB, HWC->CHW, /255
-        blob = canvas[:, :, ::-1].transpose(2, 0, 1).astype(np.float32) / 255.0
-        return blob[None], r, pad_w, pad_h
 
     def predict(self, crop):
         """crop: HxWx3 BGR uint8 -> [(x1,y1,x2,y2,conf), ...] in crop pixels."""
         if crop is None or crop.size == 0:
             return []
-        blob, r, pad_w, pad_h = self._letterbox(crop)
-        out = self.sess.run(None, {self.inp: blob})[0]   # [N, 7]
+        h0, w0 = crop.shape[:2]
+        blob = self._preprocess(crop)
+        outs = self.sess.run(None, {self.inp: blob})
+        dets = outs[0][0]      # [300, 4] — cx, cy, w, h (normalized)
+        labels = outs[1][0]    # [300, 2] — logits (background, plate)
 
-        if len(out) == 0:
-            return []
+        # Sigmoid on the plate class (index 1)
+        scores = 1.0 / (1.0 + np.exp(-labels[:, 1]))
 
-        # End2end output: [batch_idx, x1, y1, x2, y2, class_id, confidence]
-        scores = out[:, 6]
         keep = scores >= self.conf
-        out = out[keep]
-        if len(out) == 0:
+        dets, scores = dets[keep], scores[keep]
+        if len(dets) == 0:
             return []
 
-        h, w = crop.shape[:2]
-        res = []
-        for row in out:
-            # Unletterbox: coords are in the 640×640 padded space
-            x1 = (row[1] - pad_w) / r
-            y1 = (row[2] - pad_h) / r
-            x2 = (row[3] - pad_w) / r
-            y2 = (row[4] - pad_h) / r
-            # Clip to image bounds
-            x1 = max(0, min(w, x1))
-            y1 = max(0, min(h, y1))
-            x2 = max(0, min(w, x2))
-            y2 = max(0, min(h, y2))
-            res.append((int(x1), int(y1), int(x2), int(y2), float(row[6])))
-        return res
+        results = []
+        for (cx, cy, bw, bh), s in zip(dets, scores):
+            x1 = max(0, (cx - bw / 2) * w0)
+            y1 = max(0, (cy - bh / 2) * h0)
+            x2 = min(w0, (cx + bw / 2) * w0)
+            y2 = min(h0, (cy + bh / 2) * h0)
+            results.append((int(x1), int(y1), int(x2), int(y2), float(s)))
+        return results
+
+    def _preprocess(self, crop):
+        """BGR crop -> [1, 3, 768, 768] ImageNet-normalized float32."""
+        import cv2
+        rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+        resized = cv2.resize(rgb, (self.SIZE, self.SIZE), interpolation=cv2.INTER_LINEAR)
+        blob = resized.astype(np.float32) / 255.0
+        blob = blob.transpose(2, 0, 1)[None]  # [1, 3, H, W]
+        blob = (blob - _MEAN) / _STD
+        return blob

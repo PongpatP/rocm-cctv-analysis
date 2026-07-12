@@ -80,6 +80,18 @@ def record_passes(r: dict) -> bool:
     return True
 
 
+def _person_shaped_pet(r: dict) -> bool:
+    """A dog/cat box far TALLER than wide is almost always a bent-over PERSON the
+    detector mislabelled (verified on this footage: people sorting parcels tagged
+    'dog'). We keep these OUT of the searchable DB so the investigator never
+    reports a phantom animal — but they still pass to the live view."""
+    if r.get("class_name") not in ("dog", "cat"):
+        return False
+    bb = r.get("bounding_box") or {}
+    w, h = bb.get("w") or 0, bb.get("h") or 0
+    return w > 0 and h > w * 1.6
+
+
 ch.wait_ready()
 
 
@@ -97,8 +109,9 @@ async def ingest(request: Request):
 
     for r in records:
         recent.appendleft(r)
-    # boxes AND the skeletons the old sqlite writer discarded
-    ch.write_records(records)
+    # boxes AND the skeletons the old sqlite writer discarded. Person-shaped
+    # dog/cat boxes are dropped from the STORED data only (still broadcast live).
+    ch.write_records([r for r in records if not _person_shaped_pet(r)])
 
     if clients:
         payload = json.dumps({"type": "detections", "records": records})

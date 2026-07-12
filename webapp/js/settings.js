@@ -61,6 +61,38 @@ async function init() {
   renderConf();
   conf.addEventListener("input", () => { renderConf(); note("conf-note", "unsaved"); });
 
+  // Playback box sync — stored in this browser (localStorage); every playback
+  // overlay (archive page + Investigator clips) reads the same key on load.
+  const pbsync = document.getElementById("pbsync");
+  if (pbsync) {
+    const PB_KEY = "pb_sync_ms", PB_DEFAULT = 2800;
+    const pbVal = document.getElementById("pbsync-value");
+    const renderPb = () => { if (pbVal) pbVal.textContent = `${pbsync.value} ms`; };
+    pbsync.value = Number(localStorage.getItem(PB_KEY) ?? PB_DEFAULT);
+    renderPb();
+    pbsync.addEventListener("input", () => {
+      localStorage.setItem(PB_KEY, String(pbsync.value));
+      renderPb();
+      note("pbsync-note", "saved " + new Date().toLocaleTimeString(undefined, { hour12: false }));
+    });
+  }
+
+  // Investigator reply length (max tokens) — stored in this browser; agent.js
+  // reads it and sends it with each /agent/chat request.
+  const maxtok = document.getElementById("agent-maxtok");
+  if (maxtok) {
+    const MT_KEY = "agent_max_tokens", MT_DEFAULT = 2560, MT_MIN = 1280;
+    const init = Math.max(MT_MIN, Math.round(Number(localStorage.getItem(MT_KEY) ?? MT_DEFAULT)) || MT_DEFAULT);
+    maxtok.value = init;
+    localStorage.setItem(MT_KEY, String(init));   // migrate any old below-minimum value
+    maxtok.addEventListener("change", () => {
+      const v = Math.max(MT_MIN, Math.round(Number(maxtok.value) || MT_DEFAULT));
+      maxtok.value = v;
+      localStorage.setItem(MT_KEY, String(v));
+      note("agent-maxtok-note", "saved " + new Date().toLocaleTimeString(undefined, { hour12: false }));
+    });
+  }
+
   // each card owns its save: partial POSTs — the bridge patches only the
   // fields present, so the two cards never clobber each other
   const save = async (body, noteId) => {

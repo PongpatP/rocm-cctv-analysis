@@ -58,6 +58,21 @@
       </div>
 
       <div class="frow">
+        <div class="frow__label">Playback box sync
+          <span class="frow__hint">Shifts AI boxes in time so they line up with the
+          recorded video on every Playback view (this archive page and the
+          Investigator clips). If a moving object's box lags <b>behind</b> it,
+          raise this; if it runs <b>ahead</b>, lower it. Range ±10000&nbsp;ms,
+          step 100. Saved in this browser, applied on the next Playback load.</span>
+        </div>
+        <div class="frow__ctl">
+          <input type="range" id="pbsync" min="-10000" max="10000" step="100">
+          <span class="frow__value" id="pbsync-value">—</span>
+          <span class="save-note" id="pbsync-note"></span>
+        </div>
+      </div>
+
+      <div class="frow">
         <div class="frow__label">Frame interval
           <span class="frow__hint">How often the detector runs. <b>0 = every
           frame</b> (max accuracy, most GPU). 1 = every 2nd frame, N = one run
@@ -198,6 +213,18 @@
           <select id="tz"></select>
           <button class="btn-save" id="tz-save">Apply</button>
           <span class="save-note" id="tz-note"></span>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="frow__label">Investigator reply length
+          <span class="frow__hint">Maximum tokens the Investigator may write in one
+          answer. Type any number — higher = longer answers. It is capped
+          automatically to fit the model's context on long threads, so there is no
+          upper limit here. Minimum 1280, default 2560. Saved in this browser.</span>
+        </div>
+        <div class="frow__ctl">
+          <input type="number" id="agent-maxtok" min="1280" step="128" style="width:120px">
+          <span class="save-note" id="agent-maxtok-note"></span>
         </div>
       </div>
       <div class="frow">
