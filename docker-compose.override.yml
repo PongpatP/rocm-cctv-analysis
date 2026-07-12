@@ -1,0 +1,244 @@
+# AMD MI300X server — picked up automatically by docker compose. This file
+# carries the AMD/ROCm-specific settings for every GPU service (device mounts,
+# ROCm images, MIGraphX cache) on top of the base compose file.
+
+services:
+  # The detection pipeline (RT-DETR on MIGraphX + clean-room BoT-SORT tracking).
+  airocm:
+    build: ./ai_rocm
+    container_name: ccvt-airocm
+    restart: unless-stopped
+    depends_on: [gateway, bridge]
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      TZ: Asia/Bangkok
+      # uint8 variant embeds /255 + NHWC->NCHW in the graph (GPU-side);
+      # feeding raw ffmpeg frames cut ~150 ms/batch of numpy from the loop
+      RTDETR_ONNX: /models/rtdetr_r50_uint8.onnx
+      BRIDGE_URL: http://bridge:8081/ingest
+      GATEWAY_RTSP: rtsp://gateway:8554
+      CAMERAS_YAML: /configs/cameras.yaml
+      # MIGraphX model cache: persist compiled .mxr across restarts.
+      # First boot compiles (~9 min). Subsequent boots load from cache (~5s).
+      ORT_MIGRAPHX_MODEL_CACHE_PATH: /cache
+      # ReID: person crops are PUSHED to siglip /embed by the detector —
+      # without this feed there are no Global IDs and no sightings
+      SIGLIP_URL: http://siglip:8085
+      FRAMES_DIR: /output/siglip/frames
+    command: ["--cameras", "all", "--fps", "8"]
+    volumes:
+      # ROCm userspace comes from the host so it always matches the amdgpu
+      # driver; the image itself carries no ROCm.
+      - /opt/rocm:/opt/rocm:ro
+      - ./ai/models:/models:ro
+      - ./ai/configs:/configs:ro
+      - ./output/siglip/reid_models:/reid_models:ro
+      - ./ai_rocm/cache:/cache
+      # /output: writes detection-synced frames for the behaviour VLM
+      # (siglip/frames) and re-reads ai_siglip.json — the ReID gate config
+      # the AI-settings page edits (applies live)
+      - ./output:/output
+    # no ports: it only talks to gateway and bridge on the compose network
+
+  face:
+    # GPU (MIGraphX) build — cvlface embedder runs ~10x faster on the GPU
+    # (8ms/batch-8 vs 79ms CPU). MediaPipe alignment stays on CPU.
+    build:
+      context: ./face
+    deploy: !reset {}
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      TZ: Asia/Bangkok
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_DB: ccvt
+      CLICKHOUSE_USER: ccvt
+      CLICKHOUSE_PASSWORD: ccvt
+      FACES_DIR: /output/faces
+      LD_LIBRARY_PATH: /opt/rocm/lib
+      # persist the compiled .mxr so restarts skip the ~47s compile
+      ORT_MIGRAPHX_MODEL_CACHE_PATH: /cache
+    volumes:
+      - ./output:/output
+      - /opt/rocm:/opt/rocm:ro
+      - ./face/cache:/cache
+
+  plate:
+    # GPU (MIGraphX) build — the plate detector runs ~60x faster on the GPU
+    # (2.3ms vs 138ms/CPU per 640 pass). Thai OCR (PaddleOCR PIR) stays on CPU.
+    build:
+      context: ./plate
+    deploy: !reset {}
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      TZ: Asia/Bangkok
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_DB: ccvt
+      CLICKHOUSE_USER: ccvt
+      CLICKHOUSE_PASSWORD: ccvt
+      GATEWAY_URL: http://gateway:1984
+      BRIDGE_WS: ws://bridge:8081/ws
+      PLATE_CAMERAS: nvr1_ch03
+      VLM_URL: http://vllm:8000/v1
+      VLM_MODEL: gemma-4-31b-it
+      LD_LIBRARY_PATH: /opt/rocm/lib
+      ORT_MIGRAPHX_MODEL_CACHE_PATH: /cache
+    volumes:
+      - ./output:/output
+      - /opt/rocm:/opt/rocm:ro
+      - ./plate/cache:/cache
+
+  siglip:
+    # Serves the ReID graph/query API from sqlite; the youtureid embedder runs
+    # via onnxruntime-migraphx (ROCm). GPU access is the /dev/kfd device mount.
+    build:
+      context: ./siglip
+    deploy: !reset {}
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      TZ: Asia/Bangkok
+      SIGLIP_DEVICE: cpu          # torch is CPU here; the ONNX embedder uses the GPU
+      LD_LIBRARY_PATH: /opt/rocm/lib
+    volumes:
+      - /opt/rocm:/opt/rocm:ro
+
+  sysmon:
+    # Reads GPU stats with rocm-smi (bind-mounted from the host, same as
+    # airocm) over the /dev/kfd device.
+    deploy: !reset {}
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      TZ: Asia/Bangkok
+      # rocm-smi and the ROCm libs it needs come from the host mount
+      PATH: /opt/rocm/bin:/usr/local/bin:/usr/bin:/bin
+      LD_LIBRARY_PATH: /opt/rocm/lib
+    volumes:
+      - /opt/rocm:/opt/rocm:ro
+      - /:/host:ro
+
+  ground:
+    # Open-vocabulary grounding: the AI that DRAWS THE BOX when the user asks
+    # "where is X". RT-DETR boxes its 5 classes; Grounding DINO (Apache-2.0)
+    # boxes anything else by text. CPU-only — never contends for the GPU.
+    build: ./ground
+    container_name: ccvt-ground
+    restart: unless-stopped
+    environment:
+      HF_HOME: /cache/hf          # weights on scratch, shared with vllm
+    volumes:
+      - /mnt/scratch/hf:/cache/hf
+      - /etc/localtime:/etc/localtime:ro
+    # no ports: only siglip's point_at tool calls it
+
+  vlmscan:
+    # VLM preprocessing of recordings: captions every person-active minute
+    # (activity-gated from detections) via the local Gemma, into
+    # ccvt.clip_captions — the investigator searches these with run_sql.
+    build: ./vlmscan
+    container_name: ccvt-vlmscan
+    restart: unless-stopped
+    depends_on: [clickhouse, vllm]
+    environment:
+      TZ: Asia/Bangkok
+      LOOKBACK_H: "24"
+      MAX_PER_CYCLE: "30"       # ≈ caption rate/min; raise to backfill faster
+      CONCURRENCY: "2"          # parallel VLM calls (vllm max-num-seqs is 4)
+    volumes:
+      - /mnt/scratch/recordings:/recordings:ro
+
+  recorder:
+    # Both streams, on the 5TB scratch NVMe (the boot disk cannot hold this:
+    # measured 574 GiB/day main + 91 GiB/day sub for 28 cameras).
+    # sub 7 days (~640 GiB) + main 3 days (~1.7 TiB) ≈ 2.4 TiB.
+    # CAVEAT: scratch is DigitalOcean-ephemeral — footage survives reboots
+    # (fstab, nofail) but NOT droplet destroy/rebuild.
+    environment:
+      TZ: Asia/Bangkok
+      RECORDER_PROFILE: both
+      RETENTION_HOURS: "168"          # sub: 7 days
+      RETENTION_HOURS_MAIN: "72"      # main: 3 days
+    volumes:
+      - /mnt/scratch/recordings:/recordings
+      - ./webapp/config.json:/config/config.json:ro
+
+  bridge:
+    environment:
+      TZ: Asia/Bangkok
+    volumes:
+      - /mnt/scratch/recordings:/recordings
+      - ./output:/output
+      # Cameras & NVRs settings page: bridge runs configure.py to regenerate
+      # derived configs when NVRs are edited from the UI (creds stay in
+      # config.local.yaml, ro; UI-managed NVRs live in output/nvrs_override.json)
+      - ./configure.py:/repo/configure.py:ro
+      - ./config.local.yaml:/repo/config.local.yaml:ro
+      - ./config.example.yaml:/repo/config.example.yaml:ro
+      - ./output:/repo/output
+      - ./gateway:/repo/gateway
+      - ./webapp:/repo/webapp
+      - ./ai/configs:/repo/ai/configs
+
+  proxy:
+    # The base file publishes 8080 on 0.0.0.0. On this host that means the
+    # public internet: ufw's DEFAULT_INPUT_POLICY is ACCEPT, and docker's
+    # DNAT rules bypass ufw regardless. Bind to loopback; reach the UI over
+    # an SSH tunnel (`ssh -L 8080:localhost:8080 root@<host>`).
+    ports: !override
+      - "127.0.0.1:8080:8080"
+
+  vllm:
+    # ROCm build of vLLM (uses the /dev/kfd device mount below).
+    image: vllm/vllm-openai-rocm:v0.23.0
+    deploy: !reset {}
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      TZ: Asia/Bangkok
+    volumes:
+      # weights are re-downloadable -> scratch NVMe (5TB), not the boot disk.
+      - /mnt/scratch/hf:/cache/hf
+    # Gemma 4 31B at full bf16 — 191GB VRAM fits it with room to spare, so no
+    # quantization is needed.
+    command: >
+      --model google/gemma-4-31b-it
+      --served-model-name gemma-4-31b-it
+      --dtype bfloat16
+      --max-num-seqs 4
+      --gpu-memory-utilization 0.5
+      --max-model-len 8192
+      --limit-mm-per-prompt.image 2
+      --host 0.0.0.0 --port 8000

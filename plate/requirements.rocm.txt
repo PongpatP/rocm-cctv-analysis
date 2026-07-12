@@ -1,0 +1,8 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+numpy>=1.26,<2.0
+opencv-python-headless>=4.8
+paddlepaddle>=3.0
+pillow>=10
+requests>=2.32
+websocket-client>=1.8

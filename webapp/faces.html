@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Face Registration</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/faces.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">Face Registration</h1>
+      <span class="topbar__sub">Known people for face recognition</span>
+    </div>
+  </div>
+  <div class="topbar__meta">
+  </div>
+</header>
+
+<main class="dash">
+
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Register a person</h2></div>
+    <form class="reg-form" id="reg-form">
+      <div>
+        <label class="f-label" for="name">Name</label>
+        <input class="f-input" id="name" type="text" maxlength="60" required placeholder="Somchai P.">
+      </div>
+      <div>
+        <label class="f-label" for="role">Role</label>
+        <input class="f-input" id="role" type="text" maxlength="40" list="roles" placeholder="Staff">
+        <datalist id="roles">
+          <option value="Owner"></option><option value="Manager"></option>
+          <option value="Staff"></option><option value="Security"></option>
+          <option value="Guest"></option>
+        </datalist>
+      </div>
+      <div>
+        <label class="f-label">Face photos (1–10 · jpg/png/webp · clear frontal face)</label>
+        <div class="drop" id="drop">click or drop images here</div>
+        <input type="file" id="files" accept="image/jpeg,image/png,image/webp" multiple hidden>
+        <div class="previews" id="previews" style="margin-top:8px;"></div>
+      </div>
+      <button class="btn-save" type="submit" id="save">Register</button>
+      <span class="form-note" id="note"></span>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">Registered people</h2>
+      <span class="field__label" id="count">—</span>
+    </div>
+    <div id="people"></div>
+  </section>
+
+</main>
+
+<footer class="statusbar">
+  <span>Images are stored on the server for the recognition service</span>
+  <span class="statusbar__right">face recognition · registry</span>
+</footer>
+
+<script type="module" src="js/nav.js"></script>
+<script type="module" src="js/faces.js"></script>
+</body>
+</html>

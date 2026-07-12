@@ -1,0 +1,225 @@
+# One command runs the whole system:   docker compose up -d
+# Only the proxy publishes a port (8080). Gateway, bridge and AI live on
+# the internal compose network and are unreachable from outside.
+
+services:
+
+  proxy:
+    build: ./proxy
+    container_name: ccvt-proxy
+    restart: unless-stopped
+    ports:
+      - "8080:8080"            # the single public port
+    environment:
+      TZ: Asia/Bangkok
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on: [gateway, bridge, auth]
+
+  auth:
+    build: ./auth
+    container_name: ccvt-auth
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Bangkok
+    volumes:
+      - ./config.local.yaml:/config/config.local.yaml:ro
+      - ./auth/.state:/state
+    # no ports: reached as auth:8082
+
+  gateway:
+    image: alexxit/go2rtc:1.9.14
+    container_name: ccvt-gateway
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Bangkok
+    volumes:
+      - ./gateway/go2rtc.yaml:/config/go2rtc.yaml:ro
+      - ./webapp:/webapp:ro
+    # no ports: reached as gateway:1984 (web) / gateway:8554 (RTSP)
+
+  vllm:
+    # Gemma 4 31B IT, 4-bit (weights AND activations) in the compressed-tensors
+    # format. Apache-2.0, and multimodal: Gemma4ForConditionalGeneration is in
+    # vLLM's _MULTIMODAL_MODELS, so this one endpoint serves BOTH the vision and
+    # the text calls.
+    #
+    # The compressed-tensors build is used because it returns None for an
+    # unquantised lm_head (which Gemma 4 ties to embed_tokens), so it loads on
+    # vLLM v0.24.0 where the alternative quant backend raises NotImplementedError.
+    #
+    # No --quantization flag: forcing a backend overrides the config.json that
+    # names the right one.
+    image: vllm/vllm-openai-rocm:v0.23.0
+    container_name: ccvt-vllm
+    restart: unless-stopped
+    ipc: host                     # vLLM needs a large /dev/shm
+    environment:
+      HF_HOME: /cache/hf
+      VLLM_LOGGING_LEVEL: INFO
+      TZ: Asia/Bangkok
+    volumes:
+      - ./output/vllm/hf:/cache/hf
+    command: >
+      --model google/gemma-4-31b-it
+      --served-model-name gemma-4-31b-it
+      --dtype bfloat16
+      --max-num-seqs 4
+      --gpu-memory-utilization 0.5
+      --max-model-len 8192
+      --limit-mm-per-prompt.image 2
+      --host 0.0.0.0 --port 8000
+    # GPU access (AMD /dev/kfd + /dev/dri) is provided by the override file.
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 20s
+      timeout: 5s
+      retries: 40
+      start_period: 900s          # first run downloads 23.3 GB of weights
+    # no ports: reached as vllm:8000 on the compose network
+
+  plate:
+    # Thai licence plates, on the car-park entry camera only. Vehicles come from
+    # the detector over the bridge WebSocket; this adds no detector of its own.
+    build: ./plate
+    container_name: ccvt-plate
+    restart: unless-stopped
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Bangkok
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_DB: ccvt
+      CLICKHOUSE_USER: ccvt
+      CLICKHOUSE_PASSWORD: ccvt
+      GATEWAY_URL: http://gateway:1984
+      BRIDGE_WS: ws://bridge:8081/ws
+      PLATE_CAMERAS: nvr1_ch03
+      VLM_URL: http://vllm:8000/v1
+      VLM_MODEL: gemma-4-31b-it
+    volumes:
+      - ./output:/output
+    # GPU access (AMD /dev/kfd + /dev/dri) is provided by the override file.
+    # no ports: reached as plate:8087
+
+  face:
+    # Face recognition. Consumes the person crops siglip's gate already accepted;
+    # it runs no detector and fetches no frames of its own.
+    build: ./face
+    container_name: ccvt-face
+    restart: unless-stopped
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Bangkok
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_DB: ccvt
+      CLICKHOUSE_USER: ccvt
+      CLICKHOUSE_PASSWORD: ccvt
+      FACES_DIR: /output/faces
+    volumes:
+      - ./output:/output
+    # GPU access (AMD /dev/kfd + /dev/dri) is provided by the override file.
+    # no ports: reached as face:8086
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: ccvt-clickhouse
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Bangkok
+      CLICKHOUSE_DB: ccvt
+      CLICKHOUSE_USER: ccvt
+      CLICKHOUSE_PASSWORD: ccvt
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    volumes:
+      - ./output/clickhouse:/var/lib/clickhouse
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
+      - ./clickhouse/config.d:/etc/clickhouse-server/config.d:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8123/ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    # no ports: reached as clickhouse:8123 on the compose network
+
+  bridge:
+    build: ./bridge
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    container_name: ccvt-bridge
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Bangkok
+      BRIDGE_PORT: "8081"
+      BRIDGE_OUTPUT: /output
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_DB: ccvt
+      CLICKHOUSE_USER: ccvt
+      CLICKHOUSE_PASSWORD: ccvt
+    volumes:
+      - ./output:/output
+      - ./recordings:/recordings:ro
+    # no ports: reached as bridge:8081
+
+  sysmon:
+    build: ./sysmon
+    container_name: ccvt-sysmon
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Bangkok
+      APP_DIR: /host${PWD}
+    volumes:
+      - /:/host:ro
+    # GPU access (AMD /dev/kfd + /dev/dri) is provided by the override file.
+    # no ports: reached as sysmon:8083
+
+  recorder:
+    build: ./recorder
+    container_name: ccvt-recorder
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Bangkok
+      RETENTION_HOURS: "24"     # keep 1 day of footage
+      RECORDER_PROFILE: sub     # sub-streams: ~60-65 GB/day for 28 cameras
+    volumes:
+      - ./recordings:/recordings
+      - ./webapp/config.json:/config/config.json:ro
+    depends_on: [gateway]
+
+  # SigLIP2 image-embedding service. The detector POSTs gated person events;
+  # this fetches the frame, crops the person, and stores the identity
+  # embedding for downstream re-ID / clustering. Reached as siglip:8085.
+  siglip:
+    build: ./siglip
+    container_name: ccvt-siglip
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Bangkok
+      FACE_URL: http://face:8086
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_DB: ccvt
+      CLICKHOUSE_USER: ccvt
+      CLICKHOUSE_PASSWORD: ccvt
+      SIGLIP_MODEL: google/siglip2-so400m-patch16-384
+      GATEWAY_URL: http://gateway:1984
+      SIGLIP_STREAM: main       # crop from the full-res stream
+      SIGLIP_SAVE_CROPS: "1"    # archive person crops (model-agnostic dataset)
+      REID_EMBEDDER: youtureid  # identity vector: measured best (AUC .971 pooled)
+      # Embedder runs on CPU: youtureid is tiny (~17 ms/crop) and at the real
+      # ~0.6 crops/s it costs <0.1 core, whereas the MIGraphX/HSA GPU runtime
+      # busy-polled its idle queue and pinned ~11 cores. Frees the GPU too.
+      REID_EMBED_DEVICE: cpu
+    volumes:
+      - ./output:/output
+      - ./output/siglip/cache:/cache   # HF weights survive restarts
+    depends_on: [gateway]
+    # GPU access (AMD /dev/kfd + /dev/dri) is provided by the override file.
+    # The detector runs as the `airocm` service, defined in the override file.
+

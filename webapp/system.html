@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Monitor</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/system.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">System Monitor</h1>
+      <span class="topbar__sub">Host · GPUs · storage</span>
+    </div>
+  </div>
+  <div class="topbar__meta"></div>
+</header>
+
+<main class="dash">
+
+  <section class="panel panel--wide">
+    <div class="panel__head">
+      <h2 class="panel__title">Specification</h2>
+      <span class="field__label" id="spec-uptime">—</span>
+    </div>
+    <div class="specs" id="specs"></div>
+  </section>
+
+  <section class="tiles">
+    <div class="tile"><span class="tile__label">CPU</span><span class="tile__value" id="t-cpu">—</span></div>
+    <div class="tile"><span class="tile__label">RAM</span><span class="tile__value" id="t-ram">—</span></div>
+    <div class="tile" id="tile-gpu0" hidden><span class="tile__label" id="t-gpu0-label">GPU</span><span class="tile__value" id="t-gpu0">—</span></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">CPU / RAM — last 15 min</h2>
+      <div class="chart-legend">
+        <span><span class="legend__swatch" style="background:#16181b"></span>CPU %</span>
+        <span><span class="legend__swatch sw-dash"></span>RAM %</span>
+      </div>
+    </div>
+    <div class="chart" id="chart-host"></div>
+  </section>
+
+  <div id="gpu-panels" class="gpu-panels"></div>
+
+  <section class="panel panel--wide">
+    <div class="panel__head">
+      <h2 class="panel__title">Temperatures — per device</h2>
+      <div class="chart-legend">
+        <span><span class="legend__swatch" style="background:#2f9e44"></span>normal</span>
+        <span><span class="legend__swatch" style="background:#e8590c"></span>warm</span>
+        <span><span class="legend__swatch" style="background:#e03131"></span>hot</span>
+      </div>
+    </div>
+    <div id="temps" class="temps"></div>
+  </section>
+
+  <section class="panel panel--wide">
+    <div class="panel__head">
+      <h2 class="panel__title">Storage — all devices</h2>
+      <div class="chart-legend">
+        <span><span class="legend__swatch" style="background:#16181b"></span>this app</span>
+        <span><span class="legend__swatch sw-hatch"></span>other used</span>
+        <span><span class="legend__swatch sw-free"></span>free</span>
+      </div>
+    </div>
+    <div id="disks"></div>
+    <div class="app-note" id="app-note">—</div>
+  </section>
+
+</main>
+
+<footer class="statusbar">
+  <span id="status-text">—</span>
+  <span class="statusbar__right">sysmon · 5s samples</span>
+</footer>
+
+<script type="module" src="js/nav.js"></script>
+<script type="module" src="js/system.js"></script>
+</body>
+</html>

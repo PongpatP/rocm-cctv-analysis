@@ -1,0 +1,74 @@
+.graph-main { padding: 12px 16px 0; display: flex; flex-direction: column;
+  height: calc(100vh - 64px); box-sizing: border-box; }
+.graph-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding-bottom: 10px; }
+.graph-toolbar label { font-size: 12px; color: #556; display: flex; align-items: center; gap: 5px; }
+.graph-toolbar select { border: 1px solid var(--line, #d7dbe0); border-radius: 7px;
+  padding: 5px 7px; font-size: 12px; }
+.graph-hint { color: var(--muted, #667); font-size: 13px; flex: 1; min-width: 180px; }
+.graph-stat { color: var(--muted, #667); font-size: 12px; }
+
+.gbtn { border: 1px solid var(--line, #d7dbe0); background: #fff; color: var(--ink, #16181b);
+  border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+.gbtn:hover { background: #f2f5f8; }
+.gbtn--sm { padding: 3px 8px; font-size: 11px; }
+.gbtn--on { background: var(--accent, #0b5fd9); color: #fff; border-color: var(--accent, #0b5fd9); }
+
+/* scrollable stage that holds absolutely-positioned cards + an edge layer */
+.graph-stage-wrap { flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--line, #e3e6ea);
+  border-radius: 10px; background:
+  radial-gradient(circle, #f1f4f7 1px, transparent 1px) 0 0 / 26px 26px, #fbfcfd; }
+.graph-stage { position: relative; }
+#edges { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+#edges line { stroke: #9aa4b2; stroke-width: 2.5; }
+
+/* floor lanes */
+.floor-band { position: absolute; left: 0; z-index: 0; border-top: 1px dashed #cfd6de; }
+.floor-band__label { position: absolute; left: 10px; top: 8px; font: 600 12px system-ui;
+  color: #8894a2; background: #fbfcfd; padding: 2px 8px; border-radius: 6px; }
+
+/* node card */
+.gnode { position: absolute; z-index: 2; width: 210px; background: #fff;
+  border: 1px solid var(--line, #d7dbe0); border-radius: 12px; box-shadow: 0 1px 4px rgba(20,30,50,.08);
+  overflow: hidden; }
+.gnode--pending { outline: 2px solid #e8590c; }
+.gnode--labeled { border-color: #0b5fd9; }
+.gnode__bar { display: flex; align-items: center; gap: 4px; padding: 5px 7px;
+  background: #f5f7f9; cursor: grab; user-select: none; }
+.gnode__bar:active { cursor: grabbing; }
+.gnode__cam { font: 600 11px system-ui; color: #2a2f36; flex: 1; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.gnode__floor { border: 1px solid var(--line, #d7dbe0); border-radius: 6px; font-size: 11px; padding: 1px 3px; }
+.gnode__link { border: 1px solid var(--line, #d7dbe0); background: #fff; border-radius: 6px;
+  cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 5px; }
+.gnode__link.on { background: #e8590c; color: #fff; border-color: #e8590c; }
+.gnode__img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover;
+  background: #e9edf1; border-bottom: 1px solid var(--line, #eceff2); cursor: pointer; }
+.gnode__label { width: 100%; box-sizing: border-box; border: none; border-bottom: 1px solid #eceff2;
+  padding: 5px 8px; font: 600 12px system-ui; color: #16181b; }
+.gnode__label::placeholder { color: #aab2bc; font-weight: 400; }
+
+.gnode__box { padding: 6px 8px; border-bottom: 1px solid #f0f2f5; }
+.gnode__box:last-child { border-bottom: none; }
+.gnode__boxhead { display: flex; align-items: center; justify-content: space-between;
+  font: 600 10px system-ui; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 3px; }
+.gnode__boxhead span { color: #8894a2; }
+.gnode__boxhead b { color: #0b5fd9; font-weight: 600; }
+.gnode__text { font-size: 12px; color: #2a2f36; white-space: pre-wrap; min-height: 15px; }
+.gnode__text--empty { color: #aab2bc; }
+.gnode__comment { width: 100%; box-sizing: border-box; border: 1px solid #eceff2; border-radius: 6px;
+  padding: 4px 6px; font: 12px system-ui; resize: vertical; min-height: 34px; }
+.gnode__note { font-size: 10px; color: #8894a2; padding: 0 8px 6px; min-height: 12px; }
+
+/* fixed-grid blocks: drop target + dragging card */
+.slot-ghost { position: absolute; z-index: 1; border: 2px dashed #0b5fd9;
+  background: rgba(11,95,217,.06); border-radius: 12px; pointer-events: none; }
+.gnode--dragging { opacity: .9; box-shadow: 0 8px 20px rgba(20,30,50,.22);
+  transform: scale(1.01); }
+
+/* short-label row: input + auto-generate / grammar-fix buttons */
+.gnode__labelrow { display: flex; align-items: stretch; border-bottom: 1px solid #eceff2; }
+.gnode__labelrow .gnode__label { border-bottom: none; flex: 1; min-width: 0; }
+.gnode__mini { border: none; border-left: 1px solid #eceff2; background: #fafbfc;
+  cursor: pointer; font: 600 11px system-ui; color: #0b5fd9; padding: 0 7px; }
+.gnode__mini:hover { background: #eef3fa; }

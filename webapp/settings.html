@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings · CCTV Monitoring</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/settings.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">Settings</h1>
+      <span class="topbar__sub">One block per subsystem · save semantics on every card</span>
+    </div>
+  </div>
+  <div class="topbar__meta"></div>
+</header>
+
+<main class="ai-set">
+  <nav class="ai-set__nav" id="set-nav" aria-label="Settings sections">
+    <a href="#sec-detection" class="on">Object detection</a>
+    <a href="#sec-cameras">Cameras &amp; NVRs</a>
+    <a href="#sec-reid">Person ReID</a>
+    <a href="#sec-providers">VLM &amp; LLM</a>
+    <a href="#sec-behaviour">Behaviour watch</a>
+    <a href="#sec-interface">Interface</a>
+    <a href="#sec-status">Now running</a>
+  </nav>
+
+  <div class="ai-set__content">
+
+    <section class="set-card" id="sec-detection">
+      <header class="set-card__head">
+        <div>
+          <h2>Object detection</h2>
+          <p>RT-DETR R50 on the MI300X — one batch across all cameras</p>
+        </div>
+        <span class="badge badge--live">Live</span>
+      </header>
+
+      <div class="frow">
+        <div class="frow__label">Confidence
+          <span class="frow__hint">The detector's score — nothing to do with the
+          LLM. Boxes below it are ignored everywhere: live view, dashboard,
+          archive, chat evidence. Hard floor 0.10.</span>
+        </div>
+        <div class="frow__ctl">
+          <input type="range" id="conf" min="0.10" max="0.90" step="0.05">
+          <span class="frow__value" id="conf-value">—</span>
+          <button class="btn-save" id="conf-save">Apply</button>
+          <span class="save-note" id="conf-note"></span>
+        </div>
+      </div>
+
+      <div class="frow">
+        <div class="frow__label">Frame interval
+          <span class="frow__hint">How often the detector runs. <b>0 = every
+          frame</b> (max accuracy, most GPU). 1 = every 2nd frame, N = one run
+          per N+1 frames — lighter GPU, lower detection rate. Applies live.</span>
+        </div>
+        <div class="frow__ctl">
+          <input type="number" id="det-interval" min="0" max="30" step="1" style="width:80px">
+          <span class="frow__hint" id="det-interval-hint" style="margin:0"></span>
+          <span class="save-note" id="det-interval-note"></span>
+        </div>
+      </div>
+
+      <div class="frow frow--stack">
+        <div class="frow__label">Classes — all 80 COCO
+          <span class="frow__hint"><b>Left = detecting</b>, right = available.
+          Move with the arrows or double-click. Every enabled class follows the
+          same confidence above.</span>
+          <span class="frow__actions"><button class="btn-save" id="cls-save">Save classes</button>
+          <span class="save-note" id="cls-note"></span></span>
+        </div>
+        <div class="cls-shuttle">
+          <div class="cls-col">
+            <div class="cls-col__head">Detecting (<span id="cls-sel-n">0</span>)</div>
+            <select id="cls-sel" multiple size="12"></select>
+          </div>
+          <div class="cls-arrows">
+            <button type="button" id="cls-add" title="select">◀</button>
+            <button type="button" id="cls-rem" title="unselect">▶</button>
+          </div>
+          <div class="cls-col">
+            <div class="cls-col__head">Available (<span id="cls-avail-n">0</span>)</div>
+            <select id="cls-avail" multiple size="12"></select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="set-card" id="sec-cameras">
+      <header class="set-card__head">
+        <div>
+          <h2>Cameras &amp; NVRs</h2>
+          <p>Every active channel becomes a camera across the whole stack</p>
+        </div>
+        <span class="badge badge--restart">Restart to apply</span>
+        <span class="set-card__actions"><button class="btn-save" id="nvr-save">Save NVRs</button>
+          <span class="save-note" id="nvr-note"></span></span>
+      </header>
+
+      <div class="frow frow--stack">
+        <div class="frow__label">Cameras
+          <span class="frow__hint">One box = one camera. Paste its RTSP link,
+          pick its floor, done. <code>•••</code> in a link means the saved
+          password is kept. Saving pushes streams to the live view
+          immediately; detection and recording pick up changes on their next
+          restart (~1 min).</span>
+        </div>
+        <div class="cam-boxes" id="cam-boxes"></div>
+        <button type="button" class="btn-save btn-save--ghost" id="cam-add">＋ Add camera</button>
+      </div>
+    </section>
+
+    <section class="set-card" id="sec-reid">
+      <header class="set-card__head">
+        <div>
+          <h2>Person ReID</h2>
+          <p>Crop gate on the detector · identity matcher in siglip</p>
+        </div>
+        <span class="badge badge--live">Live</span>
+        <span class="set-card__actions"><button class="btn-save" id="reid-save">Apply ReID</button>
+          <span class="save-note" id="reid-note"></span></span>
+      </header>
+      <div class="frow frow--stack">
+        <div class="frow__label">Matching &amp; gate
+          <span class="frow__hint">The gate decides which person crops earn an
+          identity embedding; the matcher links tracklets into Global IDs using
+          the <a href="/graph.html">camera graph</a> edges.</span>
+        </div>
+        <div class="reid-grid" id="reid-cfg"></div>
+      </div>
+    </section>
+
+    <section class="set-card" id="sec-providers">
+      <header class="set-card__head">
+        <div>
+          <h2>VLM &amp; LLM</h2>
+          <p>Which model reads images (VLM) and writes text (LLM)</p>
+        </div>
+        <span class="badge badge--live">Live</span>
+        <span class="set-card__actions"><button class="btn-save" id="prov-save">Save providers</button>
+          <span class="save-note" id="prov-note"></span></span>
+      </header>
+      <div class="frow frow--stack">
+        <div class="frow__label">Providers
+          <span class="frow__hint"><b>On this machine</b> = the built-in Gemma:
+          free, private, no key, always available. <b>Cloud</b> = an external
+          paid API; pick it only if you add its key below. Keys are stored on
+          the server and never shown again.</span>
+        </div>
+        <div class="reid-grid" id="reid-providers"></div>
+      </div>
+    </section>
+
+    <section class="set-card" id="sec-behaviour">
+      <header class="set-card__head">
+        <div>
+          <h2>Behaviour watch</h2>
+          <p>VLM rules — crowd, dwell, vanish, parcel</p>
+        </div>
+        <span class="badge badge--live">Live</span>
+        <span class="set-card__actions"><button class="btn-save" id="bhv-save">Save behaviour</button>
+          <span class="save-note" id="bhv-note"></span></span>
+      </header>
+      <div class="frow frow--stack">
+        <div class="frow__label">Rules &amp; budget
+          <span class="frow__hint">The VLM is asked what people are doing only
+          when a rule fires, never per frame. It reads the detection-synced
+          frame the pipeline saved.
+          <span id="bhv-stats" class="frow__stats"></span></span>
+        </div>
+        <div class="reid-grid" id="behavior-cfg"></div>
+      </div>
+    </section>
+
+    <section class="set-card" id="sec-interface">
+      <header class="set-card__head">
+        <div>
+          <h2>Interface</h2>
+          <p>Display preferences for every page</p>
+        </div>
+        <span class="badge badge--live">Live</span>
+      </header>
+      <div class="frow">
+        <div class="frow__label">Time zone
+          <span class="frow__hint">Chat timestamps, evidence times and the
+          topbar clock all follow it.</span>
+        </div>
+        <div class="frow__ctl">
+          <select id="tz"></select>
+          <button class="btn-save" id="tz-save">Apply</button>
+          <span class="save-note" id="tz-note"></span>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="frow__label">Investigator chat history
+          <span class="frow__hint">Delete every saved conversation on the
+          Investigator page. This cannot be undone.</span>
+        </div>
+        <div class="frow__ctl">
+          <button class="btn-save btn-save--danger" id="chat-clear">Clear all chat history</button>
+          <span class="save-note" id="chat-clear-note"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="set-card" id="sec-status">
+      <header class="set-card__head">
+        <div>
+          <h2>Now running</h2>
+          <p>Live status read from each service — inactive models disappear</p>
+        </div>
+        <span class="badge"><span class="save-note" id="ai-cards-note"></span></span>
+      </header>
+      <div class="ai-cards" id="ai-cards"></div>
+    </section>
+
+  </div>
+</main>
+
+<script type="module" src="js/nav.js"></script>
+<script type="module" src="js/settings.js"></script>
+</body>
+</html>

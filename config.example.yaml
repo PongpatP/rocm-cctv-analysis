@@ -1,0 +1,79 @@
+# ============================================================
+# ccvt_stream_ai — system configuration TEMPLATE
+# ============================================================
+# Copy to config.local.yaml, fill in real values, then run:
+#     ./configure.py
+# config.local.yaml is gitignored: credentials never reach GitHub.
+
+nvrs:
+  - id: nvr1
+    name: NVR-01
+    host: 192.168.0.163        # NVR IP
+    port: 554
+    user: admin
+    password: CHANGE_ME
+    channels: 16
+    skip: []                   # channels with no camera, e.g. [14, 16]
+  - id: nvr2
+    name: NVR-02
+    host: 192.168.0.158
+    port: 554
+    user: admin
+    password: CHANGE_ME
+    channels: 16
+    skip: []
+
+gateway:
+  web_port: 8080               # web UI + MSE API (go2rtc)
+  rtsp_port: 8554              # re-streamed RTSP (consumed by the AI)
+  webrtc_port: 8555
+  log_level: info
+  # Where the gateway pulls camera streams from:
+  #   direct    — NVR IPs above (needs a route to the CCTV subnet)
+  #   forwarder — an upstream go2rtc relay serving the same stream names
+  #               (e.g. rtsp://<relay>:8554/nvr1_ch01_sub); credentials
+  #               then live only on the relay, not in this file
+  upstream: direct
+  # forwarder: {host: 192.168.1.151, port: 8554}
+
+bridge:
+  port: 8081                   # detections: HTTP ingest + WebSocket out
+  jsonl_path: output/detections.jsonl
+
+auth:
+  # "Sign in with Google" gate on the web UI (enforced at the proxy).
+  # false = open access, no login anywhere.
+  enabled: false
+  # Google OAuth client (console.cloud.google.com -> APIs & Services ->
+  # Credentials -> OAuth client ID, type "Web application"). Register your
+  # public URL + /auth/google/callback as an Authorized redirect URI.
+  google_client_id: ''
+  google_client_secret: ''
+  allowed_emails: []           # Google accounts allowed in
+  allowed_domains: []          # or whole domains, e.g. [yourco.com]
+  admin_emails: []             # can approve/deny/block requests at /access-requests
+  session_max_age_sec: 604800  # stay signed in 7 days
+  # true: LAN/localhost (private-IP Host) skips login — Google forbids http
+  # redirect URIs on private IPs; the gate protects the public hostname.
+  skip_lan: true
+
+ui:
+  # Old CCTV sub-streams (CIF/D1) are stored squeezed in non-square pixels.
+  # "16:9" stretches tiles to the true scene shape (modern cameras),
+  # "4:3" for old analog cameras, "native" trusts the stream as-is.
+  aspect: "16:9"
+
+ai:
+  gpu_id: 0
+  # Detector: RT-DETR R50 ONNX, run by the airocm service on
+  # onnxruntime-migraphx (AMD MI300X). The active variant is set on that
+  # service (RTDETR_ONNX); this value is legacy from the old pipeline.
+  model: rtdetr
+  # cameras the detector watches; "all" = every non-skipped channel,
+  # or a list like [nvr1_ch01, nvr2_ch03]
+  cameras: all
+  min_confidence: 0.30
+  class_filter: [person, car, truck, motorcycle, bicycle]
+  infer_interval: 0            # 0 = every frame, 1 = every 2nd frame...
+  streammux: {width: 960, height: 544, batched_push_timeout_ms: 40}
+  tracker: {enabled: true, width: 640, height: 384}

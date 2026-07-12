@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera graph</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/graph.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">Camera graph</h1>
+      <span class="topbar__sub">Live camera cards grouped by floor · draw walk-between edges for cross-camera ReID</span>
+    </div>
+  </div>
+  <div class="topbar__meta"></div>
+</header>
+
+<main class="graph-main">
+  <div class="graph-toolbar">
+    <span class="graph-hint" id="hint">Cards sit in fixed blocks. Drag a card by its title bar to snap it into another block on the SAME floor (drop on an occupied block to swap). Use the floor selector to move it to another floor. Click 🔗 on one card then 🔗 on another to link/unlink them (a person can walk directly between).</span>
+    <label title="number of floors in the building">Floors <input id="n-floors" type="number" min="1" max="60" style="width:56px"></label>
+    <label>VLM <select id="vlm-provider"></select></label>
+    <label>LLM <select id="llm-provider"></select></label>
+    <button id="refresh-thumbs" class="gbtn gbtn--sm">↻ Images</button>
+    <span class="graph-stat" id="gstat"></span>
+  </div>
+  <div class="graph-stage-wrap">
+    <div class="graph-stage" id="stage">
+      <svg id="edges" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="js/nav.js"></script>
+<script type="module" src="js/graph.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+/* faces page — builds on app.css tokens */
+
+.reg-form { display: grid; gap: 14px; }
+.f-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); display: block; margin-bottom: 5px; }
+.f-input {
+  width: 100%; padding: 9px 10px; font-size: 13px; font-family: var(--sans);
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+}
+.f-input:focus { outline: none; border-color: var(--text); }
+.drop {
+  border: 1px dashed var(--border-strong); background: var(--surface);
+  padding: 18px; text-align: center; font-size: 12px; color: var(--text-muted);
+  cursor: pointer;
+}
+.drop--over { border-color: var(--text); color: var(--text); }
+.previews { display: flex; gap: 8px; flex-wrap: wrap; }
+.previews img {
+  width: 72px; height: 72px; object-fit: cover;
+  border: 1px solid var(--border);
+}
+.btn-save {
+  padding: 10px 24px; font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; background: var(--text); color: #fff; border: 1px solid var(--text);
+  cursor: pointer; justify-self: start;
+}
+.btn-save:disabled { opacity: .5; cursor: default; }
+.form-note { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
+
+.person {
+  display: grid; grid-template-columns: 64px 1fr auto; gap: 12px;
+  align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.person__photo { width: 64px; height: 64px; object-fit: cover; border: 1px solid var(--border); background: var(--surface-2); }
+.person__name { font-size: 13px; font-weight: 700; }
+.person__role {
+  display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; padding: 2px 8px; border: 1px solid var(--border-strong);
+  color: var(--text-muted); margin-left: 8px; vertical-align: 1px;
+}
+.person__meta { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.person__thumbs { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.person__thumbs img { width: 34px; height: 34px; object-fit: cover; border: 1px solid var(--border); }
+.person__acts { display: flex; flex-direction: column; gap: 6px; }
+.mini {
+  font-size: 11px; font-weight: 600; padding: 5px 10px; border: 1px solid var(--border-strong);
+  background: var(--bg); cursor: pointer; color: var(--text);
+}
+.mini:hover { border-color: var(--text); }
+.mini--danger { color: #a02020; border-color: var(--err); }

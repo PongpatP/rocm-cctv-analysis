@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCTV Monitoring</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">CCTV Monitoring · AI</h1>
+      <span class="topbar__sub">Live camera gateway · object detection</span>
+    </div>
+  </div>
+  <div class="topbar__meta">
+    <div class="meta-block">
+      <span class="meta-block__label">Active streams</span>
+      <span class="meta-block__value" id="stream-count">0</span>
+    </div>
+    <div class="meta-block">
+      <span class="meta-block__label">Gateway</span>
+      <span class="meta-block__value" id="gateway-status">
+        <span class="led led--off" id="gateway-led"></span><span id="gateway-text">connecting</span>
+      </span>
+    </div>
+    <div class="meta-block">
+      <span class="meta-block__label">AI detector</span>
+      <span class="meta-block__value" id="ai-status">
+        <span class="led led--off" id="ai-led"></span><span id="ai-text">offline</span>
+      </span>
+    </div>
+  </div>
+</header>
+
+<nav class="toolbar">
+  <div class="toolbar__group" id="view-tabs">
+    <button class="tab tab--active" data-view="all">All cameras</button>
+    <!-- per-NVR tabs are inserted here, then the "My cameras" tab -->
+  </div>
+  <div class="toolbar__group toolbar__group--right">
+    <button class="tab tab--active" id="anno-toggle">AI boxes: on</button>
+    <label class="field">
+      <span class="field__label">Grid</span>
+      <select id="grid-cols" class="field__select">
+        <option value="auto" selected>Auto</option>
+        <option value="2">2 × N</option>
+        <option value="3">3 × N</option>
+        <option value="4">4 × N</option>
+        <option value="5">5 × N</option>
+      </select>
+    </label>
+  </div>
+</nav>
+
+<main class="grid" id="camera-grid"></main>
+
+<div class="picker" id="cam-picker" hidden>
+  <div class="picker__box">
+    <div class="picker__head">
+      <span>Pick the cameras to show</span>
+      <span class="picker__hint">only these will stream — the rest cost nothing</span>
+    </div>
+    <div class="picker__body" id="picker-list"></div>
+    <div class="picker__foot">
+      <button class="tab" id="picker-none">Clear</button>
+      <span class="picker__count" id="picker-count">0 selected</span>
+      <button class="tab" id="picker-cancel">Cancel</button>
+      <button class="tab tab--active" id="picker-save">Show them</button>
+    </div>
+  </div>
+</div>
+
+<div class="viewer" id="viewer" hidden>
+  <div class="viewer__bar">
+    <span class="viewer__title" id="viewer-title">—</span>
+    <span class="viewer__hint">main stream · ESC to close</span>
+    <button class="viewer__close" id="viewer-close" title="Close">✕</button>
+  </div>
+  <div class="viewer__stage" id="viewer-stage">
+    <canvas class="viewer__anno" id="viewer-anno"></canvas>
+  </div>
+</div>
+
+<footer class="statusbar">
+  <span id="status-text">Initialising…</span>
+  <span class="legend" id="legend"></span>
+  <span class="statusbar__right" id="statusbar-right">Live · GPU accelerated</span>
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

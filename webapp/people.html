@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tracking</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/people.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body class="trk-body">
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">Tracking</h1>
+      <span class="topbar__sub">People and vehicles · who and what moved through the building</span>
+    </div>
+  </div>
+  <div class="topbar__meta"></div>
+</header>
+
+<nav class="trk-toolbar">
+  <div class="trk-tabs">
+    <button class="trk-tab trk-tab--on" data-tab="people">People</button>
+    <button class="trk-tab" data-tab="vehicles">Vehicles</button>
+  </div>
+
+  <div class="trk-controls" id="filters-people">
+    <div class="ppl-search" id="search">
+      <span class="ppl-bubbles" id="bubbles"></span>
+      <input id="q" list="tagopts" autocomplete="off"
+             placeholder="search tag / description / camera / G-id — Enter to add">
+      <datalist id="tagopts"></datalist>
+    </div>
+    <div class="trk-filterbar">
+      <label>Last <select id="hours">
+        <option value="1">1 h</option><option value="6" selected>6 h</option>
+        <option value="12">12 h</option><option value="24">24 h</option>
+      </select></label>
+      <label>Camera <select id="cam">
+        <option value="">All cameras</option>
+      </select></label>
+      <label>Min cams <select id="mincam">
+        <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option>
+      </select></label>
+      <label>Min sightings <select id="minsee">
+        <option value="1">1</option><option value="3" selected>3</option><option value="6">6</option>
+      </select></label>
+      <button id="reload" class="pbtn">↻ Reload</button>
+      <span class="trk-spacer"></span>
+      <span class="ppl-stat" id="stat"></span>
+      <span class="ppl-model" id="model" hidden></span>
+      <span class="ppl-model ppl-thr" id="reid-thr" hidden></span>
+    </div>
+  </div>
+
+  <div class="trk-controls" id="filters-vehicles" hidden>
+    <input id="vq" type="search" class="trk-vsearch"
+           placeholder="search colour / body / plate / camera…">
+    <div class="trk-filterbar">
+      <label>Last <select id="vhours">
+        <option value="6">6 h</option><option value="24" selected>24 h</option>
+        <option value="72">3 days</option>
+      </select></label>
+      <button id="vreload" class="pbtn">↻ Reload</button>
+      <span class="trk-spacer"></span>
+      <span class="ppl-stat" id="vstat"></span>
+    </div>
+  </div>
+</nav>
+
+<main class="trk-main">
+  <section class="trk-results">
+    <div class="ppl-list" id="list"></div>
+    <div class="veh-list" id="vlist" hidden></div>
+  </section>
+
+  <aside class="trk-detail" id="detail">
+    <div class="trk-detail__idle" id="detail-idle">
+      Select a subject on the left to see their full record — snapshots, the
+      cross-camera route, the movement story and per-track behaviour.
+    </div>
+    <div class="trk-detail__view" id="detail-view" hidden>
+      <div class="trk-detail__head">
+        <span id="m-title"></span>
+        <button id="m-close" class="pbtn pbtn--sm">✕ clear</button>
+      </div>
+      <div class="trk-detail__scroll" id="detail-content"></div>
+    </div>
+  </aside>
+</main>
+
+<script type="module" src="js/nav.js"></script>
+<script type="module" src="js/people.js"></script>
+</body>
+</html>

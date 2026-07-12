@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retrospective search</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/people.css">
+<link rel="stylesheet" href="css/search.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">Retrospective search</h1>
+      <span class="topbar__sub">Ask what happened. Every answer cites the frame it was read from.</span>
+    </div>
+  </div>
+  <div class="topbar__meta"></div>
+</header>
+
+<main class="srch-main">
+  <div class="srch-bar">
+    <input id="q" type="search" autocomplete="off"
+           placeholder="e.g. did anyone carry a parcel?  ·  who stood at the lift?  ·  anything suspicious on ch10?">
+    <label>Last <select id="hours">
+      <option value="6">6 h</option><option value="24" selected>24 h</option>
+      <option value="72">3 days</option><option value="168">7 days</option>
+    </select></label>
+    <button id="ask" class="pbtn">Ask</button>
+    <span class="srch-note" id="note"></span>
+  </div>
+
+  <div class="srch-examples" id="examples">
+    <button data-q="Did anyone carry a box or a parcel?">carried a parcel?</button>
+    <button data-q="Was anybody standing still for a long time?">stood still?</button>
+    <button data-q="Show me anything suspicious">anything suspicious?</button>
+    <button data-q="Did anyone open or go through a door?">went through a door?</button>
+  </div>
+
+  <div class="srch-answer" id="answer" hidden></div>
+  <div class="srch-hint" id="hint">
+    The vision model looked at a whole camera frame each time a rule fired — a
+    group formed, someone stood still, a track ended away from the frame border,
+    or the parcel room was due for a look. Those verdicts are all this search can
+    see. It is told never to invent an event that is not in the records, so an
+    honest “the records do not say” is a correct answer.
+  </div>
+  <div class="srch-events" id="events"></div>
+</main>
+
+<script type="module" src="js/nav.js"></script>
+<script type="module" src="js/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+# ─── Secrets (NEVER commit) ───────────────────────────────────────────────
+config.local.yaml
+gateway/go2rtc.yaml
+ai/configs/cameras.yaml
+auth/.state/
+output/ai_*.json
+!ai_settings.example.json
+
+# ─── Runtime data & state ─────────────────────────────────────────────────
+output/
+recordings/
+video/
+*.db
+*.db-*
+*.jsonl
+suite_progress.txt
+suite_results.json
+retag_*
+
+# ─── Model weights (large / re-downloadable — see README "Models") ────────
+*.onnx
+*.pt
+*.pdiparams
+*.pdmodel
+*.task
+*.engine
+*.mxr
+*.tar.gz
+models.tar.gz
+
+# ─── Caches ───────────────────────────────────────────────────────────────
+**/cache/
+__pycache__/
+*.pyc
+.venv/
+
+# ─── AI assistant working files (not for public) ─────────────────────────
+agent_chat_*/
+FUJI_memory.md
+SYSTEM_ARCHITECTURE.md
+WEBAPP_ARCH.md
+14_TOOLS_DETAIL.md

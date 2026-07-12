@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Follow</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/follow.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">Follow</h1>
+      <span class="topbar__sub">Track one person across cameras, live.</span>
+    </div>
+  </div>
+  <div class="topbar__meta"></div>
+</header>
+
+<main class="follow" id="follow">
+  <section class="follow-main">
+    <div class="follow-status" id="status">Waiting for a target…</div>
+    <div class="follow-stage" id="stage">
+      <canvas class="follow-anno" id="anno"></canvas>
+      <span class="follow-cam" id="cam-tag"></span>
+    </div>
+    <div class="follow-lost" id="lost" hidden>
+      <div class="follow-lost__head" id="lost-head">Lost — scanning neighbours…</div>
+      <div class="follow-neighbours" id="neighbours"></div>
+    </div>
+  </section>
+
+  <aside class="follow-side">
+    <div class="follow-target" id="target">
+      <div class="follow-target__none">Open this page with <code>?gid=</code> a person id,
+        or press “Follow live” on a person.</div>
+    </div>
+    <div class="follow-route__head">Route</div>
+    <div class="follow-route" id="route"></div>
+  </aside>
+</main>
+
+<script type="module" src="js/nav.js"></script>
+<script type="module" src="js/follow.js"></script>
+</body>
+</html>

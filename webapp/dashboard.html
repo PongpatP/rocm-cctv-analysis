@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detection Dashboard</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">Detection Dashboard</h1>
+      <span class="topbar__sub">History &amp; live activity</span>
+    </div>
+  </div>
+  <div class="topbar__meta"></div>
+</header>
+
+<nav class="toolbar">
+  <div class="toolbar__group">
+    <label class="field">
+      <span class="field__label">Range</span>
+      <select id="range" class="field__select">
+        <option value="1">Last hour</option>
+        <option value="6">6 hours</option>
+        <option value="24" selected>24 hours</option>
+        <option value="168">7 days</option>
+      </select>
+    </label>
+  </div>
+  <div class="toolbar__group toolbar__group--right">
+    <span class="field__label" id="updated">—</span>
+  </div>
+</nav>
+
+<main class="dash">
+
+  <section class="tiles" id="tiles">
+    <div class="tile"><span class="tile__label">Objects in range</span><span class="tile__value" id="tile-total">—</span></div>
+    <div class="tile"><span class="tile__label">Last hour</span><span class="tile__value" id="tile-hour">—</span></div>
+    <div class="tile"><span class="tile__label">Busiest camera</span><span class="tile__value tile__value--sm" id="tile-busy">—</span></div>
+    <div class="tile"><span class="tile__label">Active cameras</span><span class="tile__value" id="tile-cams">—</span></div>
+  </section>
+
+  <section class="panel panel--wide">
+    <div class="panel__head">
+      <h2 class="panel__title">AI pipeline</h2>
+      <span class="field__label" id="ai-summary">—</span>
+    </div>
+    <div class="ai-grid" id="ai-grid"></div>
+  </section>
+
+  <section class="panel panel--wide">
+    <div class="panel__head">
+      <h2 class="panel__title">Objects detected over time</h2>
+      <div class="chart-legend" id="line-legend"></div>
+    </div>
+    <div class="chart" id="line-chart"></div>
+    <details class="chart-table"><summary>Data table</summary>
+      <div class="chart-table__scroll"><table id="line-table"></table></div>
+    </details>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Objects by camera</h2></div>
+    <div class="cam-bars" id="cam-bars"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">Live view</h2>
+      <select id="live-camera" class="field__select"></select>
+    </div>
+    <div class="live-stage">
+      <div id="live-holder"></div>
+      <canvas id="live-anno"></canvas>
+      <button class="live-expand" id="live-expand" title="Fullscreen">⛶</button>
+    </div>
+  </section>
+
+  <section class="panel panel--wide">
+    <div class="panel__head">
+      <h2 class="panel__title">Latest detections</h2>
+      <span class="field__label"><span class="led led--off" id="feed-led"></span> live feed</span>
+    </div>
+    <div class="feed" id="feed">
+      <div class="feed__row feed__row--head">
+        <span>Time</span><span>Camera</span><span>Class</span><span>Conf</span><span>Track</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="chart-tip" id="chart-tip" hidden></div>
+
+<script type="module" src="js/nav.js"></script>
+<script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

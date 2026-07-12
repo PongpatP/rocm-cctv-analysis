@@ -1,0 +1,42 @@
+{
+  "classes": [
+    "person",
+    "car",
+    "truck",
+    "motorcycle",
+    "bicycle",
+    "dog",
+    "cat",
+    "bed",
+    "knife",
+    "chair",
+    "couch",
+    "cell phone",
+    "scissors",
+    "bottle",
+    "laptop",
+    "remote",
+    "book"
+  ],
+  "model": "rtdetr",
+  "aspect": "16:9",
+  "nvrs": [
+    {
+      "id": "nvr1",
+      "name": "NVR1",
+      "host": "192.168.0.163",
+      "channels": 15,
+      "skip": [
+        14
+      ]
+    },
+    {
+      "id": "nvr2",
+      "name": "NVR2",
+      "host": "192.168.0.158",
+      "channels": 14,
+      "skip": []
+    }
+  ],
+  "extra_cameras": []
+}

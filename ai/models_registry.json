@@ -1,0 +1,139 @@
+{
+  "_about": "Selectable detector registry. The deployed detector is RT-DETR R50 (Apache-2.0), run as ONNX via onnxruntime-migraphx on the AMD MI300X; the RTDETR_ONNX env var picks the model file. The metadata (mAP, speed, tags, license, status) documents the alternatives that were compared. Benchmark = COCO val2017 mAP(50-95) + indicative half-precision end-to-end latency/FPS from each project's paper/repo (mixed sources — MEASURE on our own GPU for the truth). Our 5 kept classes (person/car/truck/motorcycle/bicycle) are all COCO, so every model already knows them.",
+  "benchmark_ref": "COCO val2017 mAP@[.5:.95]; latency = indicative half-precision, per papers",
+  "verdict": {
+    "deployed": "rtdetr-r50",
+    "best_accuracy": "dfine-x",
+    "best_accuracy_free": "dfine-l",
+    "fastest": "dfine-l",
+    "best_free_dropin": "rtdetr-r50",
+    "easiest_pipeline": "cnn-apache",
+    "commercial_note": "every entry here is Apache-2.0 and free to ship in a closed-source commercial product; AGPL/restrictive detector licences need a paid license and are deliberately excluded"
+  },
+  "models": [
+    {
+      "id": "rtdetr-r50",
+      "name": "RT-DETR-R50 (Baidu)",
+      "license": "Apache-2.0",
+      "commercial_free": true,
+      "coco_map": 53.1,
+      "map_note": "RT-DETR paper",
+      "latency_ms": 9.3,
+      "fps": 108,
+      "nms_free": true,
+      "family": "detr",
+      "tags": [
+        "deployed",
+        "free",
+        "nms-free",
+        "best-free-dropin"
+      ],
+      "pipeline_status": "deployed",
+      "notes": "DEPLOYED. Apache-2.0, NMS-free, strong on crowded/overlapping CCTV scenes. Exported to ONNX [batch,N,6], input 640x640, RGB. Run via onnxruntime-migraphx on the AMD MI300X (ROCm); MIGraphX compiles a .mxr cache on first boot (~9 min) and loads from cache after (~5s). COCO label order verified correct (car/person/motorcycle/truck dominate street cams).",
+      "measured": {
+        "gpu": "AMD MI300X",
+        "frames_per_s_all_cams": 24,
+        "gpu_util_pct": "18-55",
+        "power_w": 208,
+        "temp_c": 72,
+        "vram_mib": 6388,
+        "note": "batch-28 half precision, infer every 6th frame; healthy confidences (car .81 / person .78). Ample GPU headroom."
+      }
+    },
+    {
+      "id": "rtdetr-r101",
+      "name": "RT-DETR-R101 (Baidu)",
+      "license": "Apache-2.0",
+      "commercial_free": true,
+      "coco_map": 54.3,
+      "map_note": "RT-DETR paper",
+      "latency_ms": 13.5,
+      "fps": 74,
+      "nms_free": true,
+      "family": "detr",
+      "tags": [
+        "free",
+        "nms-free",
+        "higher-accuracy"
+      ],
+      "pipeline_status": "alternative",
+      "notes": "Heavier RT-DETR; more accurate, slower. Same ONNX/export shape as R50."
+    },
+    {
+      "id": "dfine-l",
+      "name": "D-FINE-L (2024)",
+      "license": "Apache-2.0",
+      "commercial_free": true,
+      "coco_map": 54.0,
+      "map_note": "D-FINE paper",
+      "latency_ms": 8.6,
+      "fps": 116,
+      "nms_free": true,
+      "family": "detr",
+      "tags": [
+        "free",
+        "nms-free",
+        "best-accuracy-free",
+        "modern"
+      ],
+      "pipeline_status": "alternative",
+      "notes": "Newer real-time DETR that beats RT-DETR on the accuracy/speed curve. Best free accuracy at real-time speed. Same DETR-style ONNX output as RT-DETR, so a cheap swap."
+    },
+    {
+      "id": "dfine-x",
+      "name": "D-FINE-X (2024)",
+      "license": "Apache-2.0",
+      "commercial_free": true,
+      "coco_map": 55.8,
+      "map_note": "D-FINE paper",
+      "latency_ms": 12.9,
+      "fps": 78,
+      "nms_free": true,
+      "family": "detr",
+      "tags": [
+        "free",
+        "nms-free",
+        "best-accuracy"
+      ],
+      "pipeline_status": "alternative",
+      "notes": "Highest mAP of the free options; slower. Overkill unless we need max accuracy."
+    },
+    {
+      "id": "rfdetr-base",
+      "name": "RF-DETR-base (Roboflow, 2025)",
+      "license": "Apache-2.0",
+      "commercial_free": true,
+      "coco_map": 53.3,
+      "map_note": "Roboflow-reported",
+      "latency_ms": 9.0,
+      "fps": 111,
+      "nms_free": true,
+      "family": "detr",
+      "tags": [
+        "free",
+        "nms-free",
+        "modern"
+      ],
+      "pipeline_status": "alternative",
+      "notes": "2025 real-time DETR, SOTA-ish, Apache-2.0. Similar ONNX integration to RT-DETR."
+    },
+    {
+      "id": "cnn-apache",
+      "name": "CNN detector (Apache-2.0)",
+      "license": "Apache-2.0",
+      "commercial_free": true,
+      "coco_map": 52.0,
+      "map_note": "representative of mature Apache-2.0 CNN detectors",
+      "latency_ms": 12.0,
+      "fps": 85,
+      "nms_free": false,
+      "family": "cnn",
+      "tags": [
+        "free",
+        "easiest-pipeline"
+      ],
+      "pipeline_status": "alternative",
+      "notes": "Mature Apache-2.0 CNN detectors are an easy commercial-free fallback; they detect the same 80 COCO classes but need an NMS step in post-processing and score a touch lower mAP than the DETR options. Some need an extra ONNX-export step depending on origin."
+    }
+  ]
+}

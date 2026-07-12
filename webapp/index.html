@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investigator</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/agent.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">Investigator</h1>
+      <span class="topbar__sub">Ask what happened. Every answer is built from what the cameras already recorded.</span>
+    </div>
+  </div>
+  <div class="topbar__meta"></div>
+</header>
+
+<main class="inv">
+  <!-- sessions -->
+  <aside class="inv-rail" id="rail">
+    <button class="inv-new" id="new-chat">＋ New chat</button>
+    <div class="inv-sessions" id="sessions"></div>
+    <!-- model + tools: the bottom-left corner cluster, filled from /agent/meta -->
+    <div class="inv-model">
+      <label>
+        <span class="inv-model__label">Model</span>
+        <select id="model"></select>
+      </label>
+      <label>
+        <span class="inv-model__label">Search window</span>
+        <select id="hours">
+          <option value="6">last 6 hours</option>
+          <option value="24" selected>last 24 hours</option>
+          <option value="72">last 3 days</option>
+          <option value="168">last 7 days</option>
+        </select>
+      </label>
+    </div>
+    <button class="inv-tools-fab" id="tools-fab" type="button"
+            title="What can I ask?">
+      <span class="inv-tools-fab__icon">🧰</span> Tools &amp; abilities
+    </button>
+    <div class="inv-tools-panel" id="tools-panel" hidden></div>
+  </aside>
+
+  <!-- conversation -->
+  <section class="inv-chat">
+    <div class="inv-thread" id="thread">
+      <div class="inv-welcome" id="welcome">
+        <h2>What would you like to look into?</h2>
+        <p>Describe an incident and I’ll search the people, movements and behaviour
+           the building has recorded. I only report what the record shows.</p>
+        <div class="inv-suggest">
+          <button data-q="I heard a pair of shoes was stolen. Do you know anything about it?">A pair of shoes was stolen</button>
+          <button data-q="Was anything suspicious happening near the parcel room?">Anything suspicious at the parcel room?</button>
+          <button data-q="Did anyone stand still for a long time in a corridor?">Someone loitering in a corridor?</button>
+        </div>
+      </div>
+    </div>
+    <form class="inv-compose" id="compose">
+      <input type="file" id="img-input" accept="image/*" hidden>
+      <button type="button" id="img-btn" title="Upload an image">📎</button>
+      <textarea id="input" rows="1" placeholder="Describe what you heard, ask who did something, or drop an image…"></textarea>
+      <button type="submit" id="send" title="Send">➤</button>
+    </form>
+  </section>
+
+  <!-- evidence -->
+  <section class="inv-evidence">
+    <div class="inv-evidence__head">
+      <span>Evidence</span>
+      <span class="inv-evidence__tools">
+        <button class="inv-evidence__reset on" id="boxes-toggle" title="Detection boxes on live cameras">boxes</button>
+        <button class="inv-evidence__reset" id="evidence-reset" title="Back to live cameras">live</button>
+      </span>
+    </div>
+    <div class="inv-evidence__tabs" id="ev-tabs"></div>
+    <div class="inv-evidence__body" id="evidence"></div>
+  </section>
+</main>
+
+<script type="module" src="js/nav.js"></script>
+<script type="module" src="js/agent.js?v=20260712"></script>
+</body>
+</html>

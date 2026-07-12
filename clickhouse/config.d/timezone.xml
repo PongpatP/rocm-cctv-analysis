@@ -1,0 +1,6 @@
+<clickhouse>
+    <!-- Stored values are epoch-correct either way; this only changes how a
+         DateTime renders, so `max(ts)` in clickhouse-client reads like the wall
+         clock on the NVR. -->
+    <timezone>Asia/Bangkok</timezone>
+</clickhouse>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playback</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/playback.css">
+<link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body class="pb-body">
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <img class="topbar__mark" src="assets/logo.png" alt="" width="32" height="32">
+    <div>
+      <h1 class="topbar__title">Playback</h1>
+      <span class="topbar__sub">Recorded footage · last 7 days</span>
+    </div>
+  </div>
+  <div class="topbar__meta"></div>
+</header>
+
+<nav class="pb-toolbar">
+  <label class="pb-field">
+    <span class="pb-field__label">Camera</span>
+    <select id="camera" class="pb-select"></select>
+  </label>
+  <label class="pb-field">
+    <span class="pb-field__label">Date</span>
+    <select id="date" class="pb-select"></select>
+  </label>
+  <div class="pb-toolbar__spacer"></div>
+  <label class="pb-field pb-field--thr">
+    <span class="pb-field__label">Confidence</span>
+    <input type="range" id="pb-thr" min="0.10" max="0.90" step="0.05">
+    <span class="pb-field__val" id="pb-thr-val">—</span>
+  </label>
+  <button class="pb-toggle pb-toggle--on" id="pb-ai">AI boxes</button>
+  <span class="pb-seg-count" id="seg-count">—</span>
+</nav>
+
+<main class="pb-main">
+  <section class="pb-stage">
+    <div class="pb-player">
+      <video id="player" preload="auto" playsinline></video>
+      <canvas class="pb-anno" id="pb-anno"></canvas>
+      <div class="pb-empty" id="empty">select a time on the timeline</div>
+    </div>
+    <div class="pb-bar">
+      <button class="pb-play" id="pb-play" title="play / pause" aria-label="play/pause">▶</button>
+      <span class="pb-bar__now" id="playing">—</span>
+      <span class="pb-bar__status" id="status-text">—</span>
+    </div>
+  </section>
+
+  <aside class="pb-review">
+    <div class="pb-review__head">
+      <span>Suggested action</span>
+      <span class="pb-review__hint">pause the clip — the AI reviews the frame</span>
+    </div>
+    <div class="pb-review__log" id="suggest-log">
+      <div class="pb-review__idle" id="suggest-idle">
+        Pause the clip and the AI reads that frame: an Observer reports what it
+        sees, an Analyst infers who/what/why, and a Supervisor decides whether to
+        check the surrounding cameras before giving a verdict.
+      </div>
+    </div>
+    <form class="pb-search" id="pb-search-form">
+      <input id="pb-search" autocomplete="off"
+             placeholder="Search — “a dog” · or across all: “which camera has a parcel”">
+      <button type="submit" title="search" aria-label="search">🔍</button>
+    </form>
+  </aside>
+</main>
+
+<div class="pb-timeline" id="pb-timeline">
+  <div class="pb-tl-legend">
+    <span><i class="pb-dot pb-dot--person"></i>person</span>
+    <span><i class="pb-dot pb-dot--vehicle"></i>vehicle</span>
+    <span><i class="pb-dot pb-dot--animal"></i>animal</span>
+    <span class="pb-tl-legend__hint">scroll ↔ to move · click to jump</span>
+    <span class="pb-tl-zoom">
+      <button id="pb-zoom-out" title="zoom out">−</button>
+      <button id="pb-zoom-in" title="zoom in">+</button>
+    </span>
+  </div>
+  <div class="pb-tl-scroll" id="pb-tl-scroll">
+    <canvas id="pb-tl"></canvas>
+  </div>
+  <div class="pb-tl-tip" id="pb-tl-tip" hidden></div>
+</div>
+
+<footer class="statusbar">
+  <span id="status-foot">—</span>
+  <span class="statusbar__right">recorder · 60s segments · H.264 copy</span>
+</footer>
+
+<script type="module" src="js/nav.js"></script>
+<script type="module" src="js/playback.js"></script>
+</body>
+</html>

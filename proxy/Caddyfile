@@ -1,0 +1,92 @@
+# Single entry point: everything arrives on :8080.
+#   /login /logout /auth/* -> auth service (Google sign-in)
+#   /ws                    -> detection bridge (WebSocket), login required
+#   everything else        -> go2rtc gateway, login required
+# Caddy proxies WebSockets automatically. forward_auth asks the auth
+# service to approve every request (2xx = pass, else its redirect is
+# returned to the browser).
+
+{
+	servers {
+		# trust X-Forwarded-* from local proxies (cloudflared on this host)
+		trusted_proxies static private_ranges
+	}
+}
+
+:8080 {
+	# compress text responses (HTML/CSS/JS/JSON); video is skipped automatically
+	encode zstd gzip
+
+	# our app files change often: force revalidation (304 when unchanged)
+	# — without this the browser kept running STALE js/css until a hard
+	# refresh, so UI fixes seemed "not to apply".
+	# no-store ensures Cloudflare edge caching does not override this.
+	@appfiles path *.html *.js *.css /
+	header @appfiles Cache-Control "no-cache, no-store, must-revalidate, private"
+
+	@auth path /login /logout /auth/* /access-requests /access-requests/*
+	handle @auth {
+		reverse_proxy auth:8082
+	}
+
+	# calib container was removed (3D reconstruction, AMD server 2026-07-10).
+	# Its /api/calib/* routes are gone; the bridge still serves the few calib
+	# result endpoints it owns (/api/calib/map, /api/calib/points.bin), matched
+	# by the @bridge rule below.
+
+	@bridge path /ws /api/stats /api/history /api/settings /api/detections /api/detections/* /api/faces /api/faces/* /api/recordings /api/recordings/* /api/calib /api/calib/* /api/config /api/config/* /api/ai/status
+	handle @bridge {
+		forward_auth auth:8082 {
+			uri /auth/verify
+			header_up CF-Connecting-IP {header.CF-Connecting-IP}
+		}
+		reverse_proxy bridge:8081
+	}
+
+	@sysmon path /api/system
+	handle @sysmon {
+		forward_auth auth:8082 {
+			uri /auth/verify
+			header_up CF-Connecting-IP {header.CF-Connecting-IP}
+		}
+		reverse_proxy sysmon:8083
+	}
+
+	# cross-camera ReID + scene-graph service (GPU0). handle_path strips the
+	# /api/reid prefix, so /api/reid/graph -> /graph at siglip:8085.
+	handle_path /api/reid/* {
+		forward_auth auth:8082 {
+			uri /auth/verify
+			header_up CF-Connecting-IP {header.CF-Connecting-IP}
+		}
+		reverse_proxy siglip:8085
+	}
+
+	# face recognition — ported to CPU (cvlface ONNX, no GPU needed).
+	handle_path /api/face/* {
+		forward_auth auth:8082 {
+			uri /auth/verify
+			header_up CF-Connecting-IP {header.CF-Connecting-IP}
+		}
+		reverse_proxy face:8086
+	}
+
+	# Thai licence plates — ported to CPU (YOLO11s + PaddleOCR).
+	handle_path /api/plate/* {
+		forward_auth auth:8082 {
+			uri /auth/verify
+			header_up CF-Connecting-IP {header.CF-Connecting-IP}
+		}
+		reverse_proxy plate:8087
+	}
+
+	handle {
+		forward_auth auth:8082 {
+			uri /auth/verify
+			header_up CF-Connecting-IP {header.CF-Connecting-IP}
+		}
+		reverse_proxy gateway:1984 {
+			header_down Cache-Control "no-cache, no-store, must-revalidate, private"
+		}
+	}
+}

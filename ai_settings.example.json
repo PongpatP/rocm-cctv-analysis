@@ -1,0 +1,10 @@
+{
+  "min_confidence": 0.5,
+  "disabled_classes": [],
+  "timezone": "Asia/Bangkok",
+  "upload_max_gb": 10.0,
+  "calib_engine": "da3stream",
+  "calib_mesh_conf": 50,
+  "map_points_max": 3000000,
+  "anthropic_api_key": ""
+}

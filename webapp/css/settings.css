@@ -1,0 +1,223 @@
+/* AI Settings — industrial layout: sticky section nav on the left, one card
+   per subsystem on the right. Save semantics are visible on every card
+   (badge + the card's own Apply button). Builds on app.css tokens. */
+
+/* ---- shell ---- */
+.ai-set {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: grid; grid-template-columns: 210px minmax(0, 1180px);
+  justify-content: center; gap: 22px; padding: 18px 22px 40px;
+  scroll-behavior: smooth;
+}
+@media (max-width: 900px) {
+  .ai-set { grid-template-columns: 1fr; }
+  .ai-set__nav { display: none; }
+}
+
+.ai-set__nav {
+  position: sticky; top: 0; align-self: start;
+  display: flex; flex-direction: column; gap: 2px; padding: 4px 4px 0;
+}
+.ai-set__nav a {
+  padding: 8px 12px; border-radius: 8px;
+  font: 600 12px var(--sans); color: var(--text-muted); text-decoration: none;
+}
+.ai-set__nav a:hover { color: var(--text); background: var(--surface); }
+.ai-set__nav a.on {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);   /* accent bar tucked inside */
+}
+
+.ai-set__content { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* ---- cards ---- */
+.set-card {
+  border: 1px solid var(--border); border-radius: 12px; background: var(--bg);
+  box-shadow: 0 1px 3px rgba(16, 24, 32, .04);
+  scroll-margin-top: 12px;
+}
+.set-card__head {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+}
+.set-card__head > div:first-child { flex: 1; min-width: 220px; }
+.set-card__head h2 {
+  font: 700 13px var(--sans); text-transform: uppercase; letter-spacing: .06em;
+  margin: 0; color: var(--text);
+}
+.set-card__head p { margin: 2px 0 0; font: 11px var(--sans); color: var(--text-muted); }
+.set-card__actions { display: flex; align-items: center; gap: 8px; }
+
+/* status indicator: a quiet dot + muted label, not a loud colored pill.
+   The dot carries the colour; the text stays neutral — reads like real
+   infra tooling instead of a template badge. */
+.badge {
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  font: 500 11px var(--sans); color: var(--text-muted); letter-spacing: .01em;
+}
+.badge::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--text-muted); flex: none;
+}
+.badge--live::before {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #16a34a 18%, transparent);
+}
+.badge--restart::before {
+  background: #d97706;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #d97706 18%, transparent);
+}
+
+/* ---- form rows: label column | control column ---- */
+.frow {
+  display: grid; grid-template-columns: 280px minmax(0, 1fr);
+  gap: 8px 26px; padding: 14px 18px; align-items: start;
+}
+.frow + .frow { border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
+.frow--stack { grid-template-columns: 1fr; }
+.frow__label { font: 600 12px var(--sans); color: var(--text); }
+.frow__hint {
+  display: block; margin-top: 4px; font: 400 11px/1.55 var(--sans);
+  color: var(--text-muted); max-width: 640px;
+}
+.frow__actions { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; }
+.frow__ctl { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.frow__ctl input[type="range"] { flex: 1; min-width: 180px; max-width: 420px;
+  accent-color: var(--accent); }
+.frow__value { font: 700 15px var(--mono); min-width: 44px; }
+.frow__stats { display: block; margin-top: 4px; font-family: var(--mono); }
+@media (max-width: 1100px) { .frow { grid-template-columns: 1fr; } }
+
+/* one input language everywhere on this page */
+.ai-set input[type="text"], .ai-set input[type="number"],
+.ai-set input[type="password"], .ai-set select, .ai-set textarea {
+  border: 1px solid var(--border); border-radius: 7px; background: var(--bg);
+  padding: 6px 9px; font: 12px var(--sans); color: var(--text);
+}
+.ai-set input:focus, .ai-set select:focus, .ai-set textarea:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.btn-save {
+  padding: 7px 16px; font: 700 11px var(--sans); text-transform: uppercase;
+  letter-spacing: .05em; background: var(--text); color: #fff;
+  border: 1px solid var(--text); border-radius: 8px; cursor: pointer;
+}
+.btn-save:hover { background: var(--accent); border-color: var(--accent); }
+.btn-save:disabled { opacity: .5; cursor: default; }
+.btn-save--danger { color: var(--err, #d0342c); border-color: var(--err, #d0342c); }
+.btn-save--danger:hover { background: var(--err, #d0342c); border-color: var(--err, #d0342c); color: #fff; }
+.btn-save--ghost { background: var(--bg); color: var(--text); margin-top: 8px; }
+.btn-save--ghost:hover { color: var(--accent); background: var(--bg); }
+.save-note { font: 11px var(--mono); color: var(--text-muted); }
+
+/* ---- detector class shuttle ---- */
+.cls-shuttle { display: flex; gap: 12px; align-items: center; }
+.cls-col { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.cls-col__head { font: 700 10px var(--sans); text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text-muted); }
+.cls-col select { width: 100%; font: 12px var(--mono); padding: 4px; }
+.cls-arrows { display: flex; flex-direction: column; gap: 8px; }
+.cls-arrows button { width: 34px; height: 30px; border: 1px solid var(--border);
+  border-radius: 7px; background: var(--bg); cursor: pointer; font-size: 13px; }
+.cls-arrows button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---- NVR cards + camera floors ---- */
+.nvr-card { border: 1px solid var(--border); border-radius: 9px; padding: 12px;
+  margin: 8px 0; background: var(--surface); }
+.nvr-card__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 14px; }
+@media (max-width: 1100px) { .nvr-card__grid { grid-template-columns: repeat(2, 1fr); } }
+.nvr-card__grid label { display: flex; flex-direction: column; gap: 3px;
+  font: 700 9px var(--sans); text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-muted); }
+.nvr-card__x { margin-top: 8px; font: 11px var(--sans); color: var(--err);
+  background: none; border: none; cursor: pointer; padding: 0; }
+.cam-floors { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 6px 14px; }
+.cam-floor { display: flex; justify-content: space-between; align-items: center;
+  gap: 8px; font: 12px var(--mono); }
+
+/* ---- ReID / providers / behaviour form grids (JS-rendered) ---- */
+.reid-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px 16px; }
+.reid-grid label { display: flex; flex-direction: column; font: 11px var(--sans);
+  color: var(--text-muted); gap: 4px; }
+.reid-grid .reid-full { grid-column: 1 / -1; }
+.reid-grid em { color: var(--text-muted); font-style: normal; }
+
+/* ---- Now running: one card per ACTIVE model (JS-rendered) ---- */
+.ai-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px; padding: 14px 18px; }
+.ai-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+  background: var(--bg); display: flex; flex-direction: column; gap: 4px; }
+.ai-card--warn { border-color: #f0b429; background: #fffdf5; }
+.ai-card__role { font: 600 10px var(--sans); text-transform: uppercase;
+  letter-spacing: .04em; color: var(--text-muted); }
+.ai-card__name { font: 600 14px var(--sans); color: var(--text); }
+.ai-card__blurb { font: 12px/1.45 var(--sans); color: var(--text-muted); }
+.ai-card__meta { font: 11px var(--sans); color: var(--accent); }
+.ai-card--warn .ai-card__meta { color: #a86400; }
+.ai-card__foot { font: 10px var(--sans); color: var(--text-muted); margin-top: auto;
+  padding-top: 6px; border-top: 1px solid var(--border); }
+.ins-note { font: 12px var(--sans); color: var(--text-muted); }
+
+/* one-line camera sources */
+.src-example { margin: 0 0 8px; padding: 10px 12px; border: 1px dashed var(--border);
+  border-radius: 8px; background: var(--surface); font: 11px/1.7 var(--mono);
+  color: var(--text-muted); overflow-x: auto; }
+#sources { width: 100%; font: 12px/1.7 var(--mono); resize: vertical; }
+
+/* camera list: dense industrial table — hairline rows, inline borderless
+   inputs, header row. No grey pillows. */
+.cam-boxes { border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; background: var(--bg); }
+.cam-head, .cam-box { display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 120px 36px; align-items: stretch; }
+.cam-head {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.cam-head span { padding: 7px 12px; font: 700 9px var(--sans);
+  text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); }
+.cam-box { border: none; border-radius: 0; padding: 0; background: var(--bg); }
+.cam-box + .cam-box { border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
+.cam-box:hover { background: color-mix(in srgb, var(--accent) 3%, var(--bg)); }
+.ai-set .cam-box input, .ai-set .cam-box select {
+  border: none; border-radius: 0; background: transparent;
+  padding: 8px 12px; height: 100%; font: 12px var(--mono); color: var(--text);
+}
+.ai-set .cam-box input:focus, .ai-set .cam-box select:focus {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg));
+}
+.cam-box__name { border-right: 1px solid color-mix(in srgb, var(--border) 55%, transparent) !important; }
+.cam-box__floor { border-left: 1px solid color-mix(in srgb, var(--border) 55%, transparent) !important;
+  font-family: var(--sans) !important; }
+.cam-box__x { border: none; background: none; color: var(--text-muted);
+  cursor: pointer; font-size: 12px; }
+.cam-box__x:hover { color: var(--err); }
+@media (max-width: 800px) {
+  .cam-head { display: none; }
+  .cam-box { grid-template-columns: 1fr; }
+  .cam-box__name, .cam-box__floor { border: none !important; }
+}
+
+/* behaviour: rule blocks + collapsible fine-tuning */
+.bhv { display: flex; flex-direction: column; gap: 10px; }
+.bhv-rule { border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface); padding: 10px 12px; }
+.bhv-rule__head { display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; }
+.bhv-rule__head b { font: 600 12px var(--sans); color: var(--text); }
+.bhv-rule__desc { display: block; margin-top: 2px; font: 11px/1.4 var(--sans);
+  color: var(--text-muted); max-width: 460px; }
+.bhv-rule__head select { min-width: 74px; }
+.bhv-adv { margin-top: 8px; }
+.bhv-adv summary { cursor: pointer; font: 600 10px var(--sans); text-transform: uppercase;
+  letter-spacing: .06em; color: var(--accent); padding: 4px 0; }
+.bhv-adv__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px 16px; padding: 8px 0 2px; }
+.bhv-adv__grid label { display: flex; flex-direction: column; gap: 4px;
+  font: 11px var(--sans); color: var(--text-muted); }
+.bhv-adv--wide { border-top: 1px solid var(--border); padding-top: 6px; }

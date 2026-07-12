@@ -1,0 +1,162 @@
+/* 2D→3D tracking — visuals come from app.css (the front page's
+ * system). Only the depth layer + start/stop buttons live here. */
+.cam__depth {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: fill; opacity: .45; pointer-events: none;
+}
+.viewer__depth {
+  position: absolute; opacity: .45; pointer-events: none;
+}
+.tab--start { background: #16181b; color: #fff; border-color: #16181b; }
+.tab--start:hover { background: #2d3138; }
+.tab--stop { background: #b91c1c; color: #fff; border-color: #b91c1c; }
+.tab--stop:hover { background: #dc2626; }
+
+/* toolbar stage groups: what is IN the pipeline vs experimental —
+ * the data-stage attribute is the hook for future per-user gating */
+.tgrp { display: flex; align-items: center; gap: 6px; }
+.tgrp + .tgrp { margin-left: 14px; padding-left: 14px;
+  border-left: 1px solid #e5e7eb; }
+.tgrp__label {
+  font: 600 9px/1 "IBM Plex Mono", monospace; letter-spacing: .08em;
+  color: #6b7280;
+}
+.tgrp[data-stage="production"] .tgrp__label { color: #15803d; }
+.tgrp[data-stage="experimental"] .tgrp__label { color: #b45309; }
+
+/* AI activity drawer — the "why did the AI fire" feed */
+.t23-drawer {
+  position: fixed; right: 0; bottom: 28px; width: 380px;
+  max-height: 55vh; display: flex; flex-direction: column;
+  background: #fff; border: 1px solid #d1d5db;
+  border-right: none; border-bottom: none;
+  border-radius: 8px 0 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,.12);
+  z-index: 40;
+}
+.t23-drawer[hidden] { display: none; }
+.t23-drawer__head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; border-bottom: 1px solid #eef0f2;
+  font: 600 11px/1.3 "IBM Plex Mono", monospace; color: #374151;
+}
+.t23-drawer__close {
+  border: none; background: none; cursor: pointer; font-size: 14px;
+  color: #6b7280;
+}
+.t23-drawer__body { overflow-y: auto; padding: 6px 0; }
+.t23-ev {
+  display: grid; grid-template-columns: 62px 1fr auto; gap: 8px;
+  padding: 6px 12px; border-bottom: 1px solid #f5f6f7;
+  font: 500 11px/1.4 "IBM Plex Mono", monospace;
+}
+.t23-ev__t { color: #9ca3af; }
+.t23-ev__why { color: #111827; }
+.t23-ev__why .t23-ev__cam { color: #2563eb; font-weight: 600; }
+.t23-ev__gpu { color: #b45309; white-space: nowrap; }
+.t23-ev--initial { background: #f0fdf4; }
+
+/* per-camera depth refresh pip — flashes on each depth update so the
+ * update frequency is visible at a glance (held 0.5 s) */
+.cam__dpip {
+  margin-left: 8px; padding: 1px 6px; border-radius: 3px;
+  font: 600 9px/1.5 "IBM Plex Mono", monospace; letter-spacing: .06em;
+  text-transform: uppercase; color: #9ca3af;
+  border: 1px solid #e5e7eb; background: #fff;
+  transition: background .12s ease, color .12s ease, box-shadow .12s ease;
+}
+.cam__dpip--live { color: #6b7280; }        /* layer is on, waiting */
+.cam__dpip--flash {                          /* a fresh depth landed */
+  color: #fff; background: #16a34a; border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, .25);
+}
+
+/* segmentation overlay (daily CitySemSegFormer) — opaque-ish semantic map */
+.cam__seg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: fill; opacity: .8; pointer-events: none;
+}
+.viewer__seg { position: absolute; opacity: .8; pointer-events: none; }
+
+/* SAM 3 live segmentation queue strip */
+.seg-queue {
+  position: fixed; left: 12px; bottom: 34px; z-index: 45;
+  max-width: 62vw; background: rgba(22,24,27,.9); color: #e5e7eb;
+  border: 1px solid #2d3138; border-radius: 8px; padding: 7px 12px;
+  font: 500 11px/1.5 "IBM Plex Mono", monospace;
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
+}
+.seg-queue[hidden] { display: none; }
+.seg-queue b { color: #fff; }
+.seg-queue__run { color: #3ddc84; }         /* processing now */
+.seg-queue__wait { color: #9ca3af; }        /* waiting in queue */
+.seg-queue__idle { color: #f59e0b; }
+
+/* "Video: off" — hide the live streams, keep only the AI overlays on a
+   plain dark backdrop so results read cleanly without the picture behind */
+body.no-bg-video .cam__stage cam-stream,
+body.no-bg-video .viewer__stage cam-stream { visibility: hidden; }
+body.no-bg-video .cam__stage,
+body.no-bg-video .viewer__stage { background: #0e1013; }
+
+/* ---- 3D Twin zone (below the camera grid) ---- */
+.cam__twin { border: 1px solid #2a2f36; background: #16181b; color: #cbd5e1;
+  border-radius: 4px; font: 600 10px/1 "IBM Plex Mono", monospace;
+  padding: 3px 6px; cursor: pointer; }
+.cam__twin:hover { background: #3ddc84; color: #06231a; border-color: #3ddc84; }
+
+.twin-zone { margin: 18px; border: 1px solid #23272e; border-radius: 10px;
+  background: #0e1013; overflow: hidden; }
+.twin-zone__head { display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; border-bottom: 1px solid #23272e; }
+.twin-zone__title { margin: 0; font-size: 15px; color: #e5e7eb; }
+.twin-zone__sub { font-size: 11px; color: #8b929c; }
+.twin-zone__ctrl { display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; }
+.twin-zone__ctrl .field { display: flex; align-items: center; gap: 6px; }
+.twin-zone__ctrl .field__label { font-size: 11px; color: #8b929c; }
+.twin-zone__ctrl .field__select { background: #16181b; color: #e5e7eb;
+  border: 1px solid #2a2f36; border-radius: 5px; padding: 5px 8px;
+  font: inherit; }
+.twin-zone__ctrl .tab { background: #16181b; color: #cbd5e1;
+  border: 1px solid #2a2f36; }
+.twin-zone__ctrl .tab.tab--active,
+.twin-zone__ctrl .tab:hover { background: #23272e; color: #fff; }
+.twin-stage { position: relative; width: 100%; height: 62vh;
+  min-height: 380px; background: #0e1013; }
+.twin-stage canvas { display: block; width: 100%; height: 100%; }
+.twin-hint { position: absolute; inset: 0; display: flex;
+  align-items: center; justify-content: center; text-align: center;
+  color: #8b929c; font-size: 13px; padding: 20px; pointer-events: none; }
+
+/* ---- AI Lab: one long scrolling page (cameras on top, 3D twin below) ---- */
+body.lab-page { height: auto; min-height: 100%; }
+/* the grid no longer scrolls internally — the whole document scrolls */
+body.lab-page .grid { flex: none; overflow: visible; }
+/* keep the AI toggle bar reachable while scrolling down to the twin */
+body.lab-page .toolbar { position: sticky; top: 0; z-index: 29; }
+
+/* 3D twin — on-screen keyboard legend */
+.twin-keys { position: absolute; left: 12px; bottom: 12px; z-index: 3;
+  background: rgba(14,16,19,.82); border: 1px solid #23272e;
+  border-radius: 8px; padding: 8px 10px; font-size: 11px; color: #c7ccd4;
+  pointer-events: none; line-height: 1.7; max-width: 260px; }
+.twin-keys__title { font: 600 10px/1.4 "IBM Plex Mono", monospace;
+  text-transform: uppercase; letter-spacing: .05em; color: #8b929c;
+  margin-bottom: 4px; }
+.twin-keys__row { display: flex; align-items: center; gap: 5px; }
+.twin-keys__row span { color: #9aa1ab; margin-left: 4px; }
+.twin-keys kbd { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 4px; font: 600 11px/1 monospace;
+  color: #e5e7eb; background: #23272e; border: 1px solid #3a3f47;
+  border-bottom-width: 2px; border-radius: 4px; }
+.twin-keys__mouse { margin-top: 5px; font-size: 10px; color: #7b828c; }
+
+/* 3D twin — real-camera thumbnail (what this camera actually sees) */
+.twin-thumb { position: absolute; right: 12px; top: 12px; z-index: 3;
+  width: 160px; border: 1px solid #3a3f47; border-radius: 6px;
+  background: #000; box-shadow: 0 2px 10px rgba(0,0,0,.5); display: none; }
+.twin-thumb img { width: 100%; display: block; aspect-ratio: 16/9;
+  object-fit: fill; border-radius: 6px 6px 0 0; }
+.twin-thumb__cap { font: 600 10px/1.5 "IBM Plex Mono", monospace;
+  color: #cbd5e1; padding: 2px 6px; text-align: center; }
