@@ -1,0 +1,28 @@
+# Core Computer Vision & Numerical Computing
+numpy>=1.24.0,<2.0.0
+opencv-python>=4.8.0
+pillow>=9.5.0
+requests>=2.28.0
+pydantic>=2.0.0
+pyyaml>=6.0
+
+# Deep Learning Inference Runtime
+# For AMD ROCm: install onnxruntime-migraphx or rocm-specific onnxruntime
+# For standard testing (CPU/CUDA): onnxruntime or onnxruntime-gpu
+onnxruntime>=1.16.0
+
+# Face Landmark & Preprocessing
+mediapipe>=0.10.0
+
+# OCR (License Plate Recognition)
+# Note: For PaddleOCR, paddlepaddle is required
+paddlepaddle>=2.5.0
+paddleocr>=2.7.0
+
+# VLM / LLM Client (Gemma 4 via vLLM or OpenAI-compatible endpoint)
+openai>=1.0.0
+
+# Interactive & Notebook Environment
+jupyterlab>=4.0.0
+ipykernel>=6.20.0
+matplotlib>=3.7.0
